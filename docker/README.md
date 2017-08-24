@@ -9,7 +9,8 @@ package installed.
 Images are tagged using the format
 
 ```
-release-<dada2-version>[<image-version>]```
+release-<dada2-version>[<image-version>]
+```
 
 where ```dada2-version``` corresponds to a dada2 release, and
 ```image-version``` is a single lowercase letter indicating an
