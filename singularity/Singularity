@@ -1,5 +1,5 @@
 Bootstrap:docker
-From:nghoffman/r-reporting:release-TAG
+From:nghoffman/dada2:TAG
 
 %post
     mkdir -p /fh

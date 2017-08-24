@@ -2,15 +2,23 @@
 
 set -e
 
-if [[ -z $1 ]]; then
-    echo "usage: ./build.sh <tag> [<outdir>]"
-    exit 1
+if [[ $1 == '-h' ]]; then
+    echo "usage: ./build.sh [<version>] [<outdir>]"
+    echo "builds :latest by default"
+    exit
 fi
 
 outdir=$(readlink -f ${2-.})
 
-tag=$1
-img=dada2-${tag}.img
+if [[ -z $1 ]]; then
+    version=$1
+    tag=latest
+else
+    version=$1
+    tag=release-$1
+fi
+
+img=dada2-${version}.img
 singfile=$(mktemp Singularity-XXXXXX)
 sed s"/TAG/$tag/" < Singularity > $singfile
 
