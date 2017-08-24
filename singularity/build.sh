@@ -11,7 +11,7 @@ fi
 outdir=$(readlink -f ${2-.})
 
 if [[ -z $1 ]]; then
-    version=$1
+    version=latest
     tag=latest
 else
     version=$1
@@ -23,7 +23,7 @@ singfile=$(mktemp Singularity-XXXXXX)
 sed s"/TAG/$tag/" < Singularity > $singfile
 
 if [[ ! -f $img ]]; then
-    singularity create --size 3000 $img
+    singularity create --size 2048 $img
     sudo singularity bootstrap $img $singfile
 fi
 
