@@ -18,7 +18,8 @@ install.packages(
 
 bioc_packages <- c(
     "devtools",
-    "qrqc"
+    "qrqc",
+    "phyloseq"
 )
 
 ## source("https://bioconductor.org/biocLite.R")
