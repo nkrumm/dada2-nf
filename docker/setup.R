@@ -2,11 +2,13 @@ library(parallel)
 ncores <- min(c(8, parallel::detectCores()))
 
 cran_packages <- c(
+    "R.utils",
+    "ape",
     "argparse",
     "lattice",
     "latticeExtra",
+    "reshape2",
     "rmarkdown",
-    "R.utils",
     "tidyr"
 )
 
@@ -18,8 +20,8 @@ install.packages(
 
 bioc_packages <- c(
     "devtools",
-    "qrqc",
-    "phyloseq"
+    "phyloseq",
+    "qrqc"
 )
 
 ## source("https://bioconductor.org/biocLite.R")
