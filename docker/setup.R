@@ -5,10 +5,12 @@ cran_packages <- c(
     "R.utils",
     "ape",
     "argparse",
+    "dplyr",
     "lattice",
     "latticeExtra",
     "reshape2",
     "rmarkdown",
+    "readr",
     "tidyr"
 )
 
@@ -31,5 +33,5 @@ biocLite(
     Ncpus=ncores,
     clean=TRUE)
 
-dada2_version = 'd57ccf5e22c8e709bf625a033dfa25561cbd392f' ## version 1.4.1
+dada2_version = '553008d286895af90e9d0a734c7210c1bc597b8c' ## version 1.6
 devtools::install_github("benjjneb/dada2", ref=dada2_version)
