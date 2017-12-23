@@ -18,7 +18,7 @@ else
     tag=release-$1
 fi
 
-img=dada2-${version}.img
+img=dada2-${version}-singularity$(singularity --version).img
 singfile=$(mktemp Singularity-XXXXXX)
 sed s"/TAG/$tag/" < Singularity > $singfile
 

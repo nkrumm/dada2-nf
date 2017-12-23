@@ -1,7 +1,2 @@
 Bootstrap:docker
 From:nghoffman/dada2:TAG
-
-%post
-    mkdir -p /fh
-    mkdir -p /app
-    mkdir -p /mnt
