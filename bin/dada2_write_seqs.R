@@ -1,9 +1,8 @@
 #!/usr/bin/env Rscript
 
 suppressPackageStartupMessages(library(argparse, quietly = TRUE))
-## suppressPackageStartupMessages(library(tidyr, quietly = TRUE))
-## suppressPackageStartupMessages(library(plyr, quietly = TRUE))
-
+suppressPackageStartupMessages(library(tidyr, quietly = TRUE))
+suppressPackageStartupMessages(library(plyr, quietly = TRUE))
 
 load_obj <- function(f){
   ## load a single arbitrary object from an .rda file
@@ -34,10 +33,6 @@ main <- function(arguments){parser <- ArgumentParser()
 
   long <- do.call(rbind, lapply(seqtabs, as.data.frame.table, stringsAsFactors=FALSE))
   colnames(long) <- c('specimen', 'seq', 'count') ## order sequences by total mass
-
-  ## remove zero values that result from expansion by as.data.frame.table
-  long <- long[long$count > 0,]
-
   totals <- aggregate(count ~ seq, long, sum)
   totals <- totals[order(totals$count, decreasing=TRUE),]
 
@@ -54,7 +49,7 @@ main <- function(arguments){parser <- ArgumentParser()
   ## replace sequences with sv names
   long$sv <- seqinv[long$seq]
   long$seq <- NULL
-
+  long <- long[long$count > 0,]
   ## reorder by sv name then count
   long <- long[order(long$sv, -long$count),]
 

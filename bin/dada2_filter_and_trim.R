@@ -1,6 +1,9 @@
 #!/usr/bin/env Rscript
 
-source('bin/dada2_common.R') ## provides fastq_files()
+## provides fastq_files()
+source(file.path(
+    normalizePath(dirname(gsub('--file=', '', grep('--file', commandArgs(), value=TRUE)))),
+    'dada2_common.R'))
 
 suppressPackageStartupMessages(library(argparse, quietly = TRUE))
 suppressPackageStartupMessages(library(dada2, quietly = TRUE))

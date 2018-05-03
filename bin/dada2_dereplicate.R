@@ -1,6 +1,9 @@
 #!/usr/bin/env Rscript
 
-source('bin/dada2_common.R')
+## provides fastq_files()
+source(file.path(
+    normalizePath(dirname(gsub('--file=', '', grep('--file', commandArgs(), value=TRUE)))),
+    'dada2_common.R'))
 
 suppressPackageStartupMessages(library(argparse, quietly = TRUE))
 suppressPackageStartupMessages(library(dada2, quietly = TRUE))
@@ -29,6 +32,8 @@ main <- function(arguments){
                       help='process a random subset of N specimens')
   parser$add_argument('--max-mismatch', type='integer', default=0,
                       help='The maximum mismatches allowed in the overlap region.')
+  parser$add_argument('--max-indels', type='integer', default=16,
+                      help='The maximum number of cumulative indels a sequence may contain compared to a more abundant variant to be considered for grouping.')
 
   args <- parser$parse_args(arguments)
 
@@ -51,10 +56,18 @@ main <- function(arguments){
     }
 
     cat('generating error model for forward reads\n')
-    f <- do_dada(fnFs, sample.names, pool=args$pool, multithread=multithread)
+    f <- do_dada(fnFs,
+                 sample.names,
+                 pool=args$pool,
+                 multithread=multithread,
+                 BAND_SIZE=args$max_indels)
 
     cat('generating error model for reverse reads\n')
-    r <- do_dada(fnRs, sample.names, pool=args$pool, multithread=multithread)
+    r <- do_dada(fnRs,
+                 sample.names,
+                 pool=args$pool,
+                 multithread=multithread,
+                 BAND_SIZE=args$max_indels)
 
     cat('merging reads\n')
     merged <- dada2::mergePairs(

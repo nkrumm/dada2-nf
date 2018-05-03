@@ -2,6 +2,11 @@
 
 suppressPackageStartupMessages(library(argparse, quietly = TRUE))
 
+## provides fastq_files()
+source(file.path(
+    normalizePath(dirname(gsub('--file=', '', grep('--file', commandArgs(), value=TRUE)))),
+    'dada2_common.R'))
+
 main <- function(arguments){
   parser <- ArgumentParser()
   parser$add_argument('infile')
