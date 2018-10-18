@@ -33,5 +33,5 @@ biocLite(
     Ncpus=ncores,
     clean=TRUE)
 
-dada2_version = '553008d286895af90e9d0a734c7210c1bc597b8c' ## version 1.6
+dada2_version = '630ef9ac993267eda7224ba5326600c3aaff8a6f' ## version 1.8
 devtools::install_github("benjjneb/dada2", ref=dada2_version)
