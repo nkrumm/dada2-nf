@@ -2,30 +2,28 @@
 
 set -e
 
+label=1.8
+sha=630ef9ac993267eda7224ba5326600c3aaff8a6f
+
 if [[ $1 == '-h' ]]; then
-    echo "usage: ./build.sh [<version>] [<outdir>]"
-    echo "builds :latest by default"
+    echo "usage: ./build.sh [label] [commit-sha]"
+    echo "- label identifies the dada2 version in the image file name [$label]"
+    echo "- sha is the dada2 commit to install [$sha]"
     exit
 fi
 
 outdir=$(readlink -f ${2-.})
 
-if [[ -z $1 ]]; then
-    version=latest
-    tag=latest
-else
-    version=$1
-    tag=release-$1
-fi
+label=${1-$label}
+sha=${2-$sha}
 
-img=dada2-${version}-singularity$(singularity --version).img
+img=dada2-${label}-singularity$(singularity --version).simg
 singfile=$(mktemp Singularity-XXXXXX)
-sed s"/TAG/$tag/" < Singularity > $singfile
+sed s"/SHA/$sha/" < Singularity > $singfile
 
 if [[ ! -f $img ]]; then
-    singularity create --size 2048 $img
-    sudo singularity bootstrap $img $singfile
+    sudo singularity build $img $singfile
 fi
 
-rm $singfile
+rm -f $singfile
 

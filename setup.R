@@ -1,6 +1,11 @@
 library(parallel)
 ncores <- min(c(8, parallel::detectCores()))
 
+dada2_commit <- Sys.getenv('DADA2_COMMIT')
+if(nchar(dada2_commit) == 0){
+  stop('the environment variable DADA2_COMMIT must be set')
+}
+
 cran_packages <- c(
     "R.utils",
     "ape",
@@ -33,5 +38,4 @@ biocLite(
     Ncpus=ncores,
     clean=TRUE)
 
-dada2_version = '630ef9ac993267eda7224ba5326600c3aaff8a6f' ## version 1.8
-devtools::install_github("benjjneb/dada2", ref=dada2_version)
+devtools::install_github("benjjneb/dada2", ref=dada2_commit)
