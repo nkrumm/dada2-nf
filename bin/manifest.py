@@ -83,7 +83,7 @@ def read_manifest_csv(fname, keepcols=KEEPCOLS):
             yield dict(d)
 
 
-def add_barcodecop(input, sample, config=None):
+def add_barcodecop(sample, input, config=None):
     d = {}
     d['input'] = input
     d['output'] = {}
@@ -118,6 +118,7 @@ def main(arguments):
     output = []
     for sampleid, files in groupby(sorted(decorated), key=lambda x: x[0]):
         __, files = zip(*files)
+
         readtypes = ['I1', 'I2', 'R1', 'R2']
         input = dict(zip(readtypes, files))
         for key, fname in input.items():
