@@ -83,6 +83,14 @@ def read_manifest_csv(fname, keepcols=KEEPCOLS):
             yield dict(d)
 
 
+def add_barcodecop(input, sample, config=None):
+    d = {}
+    d['input'] = input
+    d['output'] = {}
+    d['params'] = {}
+    return d
+
+
 def main(arguments):
 
     parser = argparse.ArgumentParser(
@@ -116,8 +124,7 @@ def main(arguments):
             assert '_{}_'.format(key) in fname
 
         sample = sampledata[sampleid]
-        sample['input'] = input
-
+        sample['barcodecop'] = add_barcodecop(sample, input)
         output.append(sample)
 
     json.dump(output, args.outfile, indent=2)
