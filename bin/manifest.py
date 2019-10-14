@@ -76,7 +76,7 @@ def read_manifest_csv(fname, keepcols=KEEPCOLS):
         for d in reader:
             if popextra:
                 d.pop('_')
-            yield d
+            yield dict(d)
 
 
 def main(arguments):
@@ -85,7 +85,7 @@ def main(arguments):
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('manifest', help="Manifest in excel or csv format")
-    # parser.add_argument('fastq_files', help="File ")
+    parser.add_argument('data_dir', help="Directory containing fastq.gz files")
     parser.add_argument('-o', '--outfile', help="Output .json file")
 
     args = parser.parse_args(arguments)
