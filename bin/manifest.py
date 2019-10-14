@@ -28,6 +28,7 @@ TODO: validators for manifest
 
 """
 
+from os import path
 import os
 import sys
 import argparse
@@ -35,6 +36,9 @@ import json
 from itertools import takewhile
 from operator import attrgetter
 import csv
+import glob
+import re
+from itertools import groupby
 
 import openpyxl
 
@@ -86,14 +90,37 @@ def main(arguments):
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('manifest', help="Manifest in excel or csv format")
     parser.add_argument('data_dir', help="Directory containing fastq.gz files")
-    parser.add_argument('-o', '--outfile', help="Output .json file")
+    parser.add_argument('-o', '--outfile', help="Output .json file",
+                        type=argparse.FileType('w'), default=sys.stdout)
 
     args = parser.parse_args(arguments)
     read_manifest = (read_manifest_csv if args.manifest.endswith('.csv')
                      else read_manifest_excel)
     manifest = list(read_manifest(args.manifest))
-    for d in manifest:
-        print(d)
+    sampledata = {d['sampleid']: d for d in manifest}
+    # make sure all sampleids are unique
+    assert len(manifest) == len(sampledata)
+
+    sample_rexp = re.compile(r'\b(?P<sampleid>{})[\b_]'.format(
+        '|'.join(d['sampleid'] for d in manifest)))
+
+    fq_files = glob.glob(path.join(args.data_dir, '*'))
+    decorated = [(sample_rexp.search(fn).groups()[0], fn) for fn in fq_files]
+
+    output = []
+    for sampleid, files in groupby(sorted(decorated), key=lambda x: x[0]):
+        __, files = zip(*files)
+        readtypes = ['I1', 'I2', 'R1', 'R2']
+        input = dict(zip(readtypes, files))
+        for key, fname in input.items():
+            assert '_{}_'.format(key) in fname
+
+        sample = sampledata[sampleid]
+        sample['input'] = input
+
+        output.append(sample)
+
+    json.dump(output, args.outfile, indent=2)
 
 
 if __name__ == '__main__':
