@@ -21,6 +21,11 @@ Optional fields:
  * controls - a column that can be used to indicate which specimens
    are controls. Specimens matching --neg-control-pattern are defined
    as negative controls
+
+TODO: validators for manifest
+- make sure all samplids are unique
+
+
 """
 
 import os
@@ -29,13 +34,14 @@ import argparse
 import json
 from itertools import takewhile
 from operator import attrgetter
+import csv
 
 import openpyxl
 
 KEEPCOLS = {'sampleid', 'sample_name', 'project', 'batch', 'controls'}
 
 
-def read_manifest(fname, keepcols=KEEPCOLS):
+def read_manifest_excel(fname, keepcols=KEEPCOLS):
     """Read the first worksheet from an excel file and return a generator
     of dicts with keys limited to 'keepcols'.
 
@@ -61,6 +67,18 @@ def read_manifest(fname, keepcols=KEEPCOLS):
         yield d
 
 
+def read_manifest_csv(fname, keepcols=KEEPCOLS):
+
+    with open(fname) as f:
+        reader = csv.DictReader(f)
+        reader.fieldnames = [(n if n in keepcols else '_') for n in reader.fieldnames]
+        popextra = '_' in reader.fieldnames
+        for d in reader:
+            if popextra:
+                d.pop('_')
+            yield d
+
+
 def main(arguments):
 
     parser = argparse.ArgumentParser(
@@ -71,7 +89,9 @@ def main(arguments):
     parser.add_argument('-o', '--outfile', help="Output .json file")
 
     args = parser.parse_args(arguments)
-    manifest = read_manifest(args.manifest)
+    read_manifest = (read_manifest_csv if args.manifest.endswith('.csv')
+                     else read_manifest_excel)
+    manifest = list(read_manifest(args.manifest))
     for d in manifest:
         print(d)
 
