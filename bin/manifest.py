@@ -36,18 +36,28 @@ KEEPCOLS = {'sampleid', 'sample_name', 'project', 'batch', 'controls'}
 
 
 def read_manifest(fname, keepcols=KEEPCOLS):
-    wb = openpyxl.load_workbook(fname)
-    sheet = wb[wb.sheetnames[0]]
+    """Read the first worksheet from an excel file and return a generator
+    of dicts with keys limited to 'keepcols'.
+
+    """
+
     valgetter = attrgetter('value')
 
+    wb = openpyxl.load_workbook(fname)
+    sheet = wb[wb.sheetnames[0]]
+
     rows = (r for r in sheet.iter_rows() if r[0].value)
-    header = next(rows)
-    fieldnames = list(map(valgetter, takewhile(valgetter, header)))
-    fieldnames = [(f if f in keepcols else '_') for f in fieldnames]
+
+    # get fieldnames from cells in the first row up to the first empty one
+    header = takewhile(valgetter, next(rows))
+    # replace column names to be discarded with '_'
+    fieldnames = [(cell.value if cell.value in keepcols else '_') for cell in header]
+    popextra = '_' in fieldnames
 
     for row in rows:
         d = dict(zip(fieldnames, map(valgetter, row)))
-        d.pop('_')
+        if popextra:
+            d.pop('_')
         yield d
 
 
