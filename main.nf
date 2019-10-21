@@ -39,7 +39,7 @@ process run_barcodecop {
 }
 
 process plot_quality {
-    container "nghoffman/dada2"
+    container "dada2:R3.5.1_Bioc3.7"
 
     input:
     set sampleid, batch, file("fwd.fq.gz"), file("rev.fq.gz") from barcodecop
