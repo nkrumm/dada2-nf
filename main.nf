@@ -1,5 +1,5 @@
-sample_info = Channel.fromPath( 'test/sample-information.csv' )
 fastq = Channel.fromPath( 'test/fastq/*' ).collect()
+sample_info = Channel.fromPath( 'test/sample-information.csv' )
 
 // TODO: READ counts here
 // TODO: output to csv??
@@ -28,17 +28,17 @@ process run_barcodecop {
     file("test/fastq/") from fastq
 
     output:
-    set sampleid, batch, file("${sampleid}_R1.fq.gz"), file("${sampleid}_R2.fq.gz") into barcodecop
-    set val("${sampleid}_R1.fq.gz"), val("${sampleid}_R2.fq.gz") into pairs
-    set file("${sampleid}_R1.fq.gz"), file("${sampleid}_R2.fq.gz") into to_filt_trim
+    set batch, sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into barcodecop
+    set val("${sampleid}_R1_.fq.gz"), val("${sampleid}_R2_.fq.gz") into pairs
+    set file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into to_filt_trim
     file("${sampleid}_R1_counts.csv")
     file("${sampleid}_R2_counts.csv")
 
     // publishDir params.output, copy: true, overwrite: true
 
     """
-    barcodecop --csv-counts ${sampleid}_R1_counts.csv --fastq ${R1} --match-filter --quiet ${I1} ${I2} | gzip > ${sampleid}_R1.fq.gz
-    barcodecop --csv-counts ${sampleid}_R2_counts.csv --fastq ${R2} --match-filter --quiet ${I1} ${I2} | gzip > ${sampleid}_R2.fq.gz
+    barcodecop --csv-counts ${sampleid}_R1_counts.csv --fastq ${R1} --match-filter --quiet ${I1} ${I2} | gzip > ${sampleid}_R1_.fq.gz
+    barcodecop --csv-counts ${sampleid}_R2_counts.csv --fastq ${R2} --match-filter --quiet ${I1} ${I2} | gzip > ${sampleid}_R2_.fq.gz
     """
 }
 
@@ -46,7 +46,7 @@ process plot_quality {
     container "nghoffman/dada2:release-1.8.0"
 
     input:
-    set sampleid, batch, file("fwd.fq.gz"), file("rev.fq.gz") from barcodecop
+    set batch, sampleid, file("fwd.fq.gz"), file("rev.fq.gz") from barcodecop
 
     output:
     file("qplot_${sampleid}.svg")
@@ -68,7 +68,7 @@ process list_files {
     output:
     file("fastq_list.txt") into fastq_list
 
-    publishDir params.output, copy: true
+    publishDir params.output, copy: true, overwrite: true
 
     """
     echo \"${p.join('\n')}\" > fastq_list.txt
@@ -83,10 +83,10 @@ process filter_and_trim {
     file("fastq_list.txt") from fastq_list
 
     output:
-    file("filtered/*_filt.fastq.gz") into filtered
+    file("*_filt.fastq.gz") into filtered
 
     """
-    dada2_filter_and_trim.R fastq_list.txt --trim-left 15 --f-trunc 280 --r-trunc 250 --truncq 2 --filt-path filtered/
+    dada2_filter_and_trim.R fastq_list.txt --trim-left 15 --f-trunc 280 --r-trunc 250 --truncq 2 --filt-path .
     """
 }
 
@@ -104,3 +104,18 @@ process dereplicate {
     dada2_dereplicate.R . --rdata dada2.rda --seqtab-nochim seqtab_nochim.rda --max-mismatch 1
     """
 }
+
+// process overlaps {
+//     container "nghoffman/dada2:release-1.8.0"
+//
+//     input:
+//     file('dada2.rda')
+//
+//     output:
+//     file('overlaps.csv')
+//
+//     """
+//     dada2_overlaps.R dada2.rda --batch $batch -o overlaps.csv
+//     """
+// }
+
