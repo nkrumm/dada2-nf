@@ -1,14 +1,30 @@
 # Dada2 Nextflow pipeline
 
+## Local execution quickstart for the truly impatient
+
+Install Docker and make sure that the Docker daemon is running.
+
+Install the nextflow binary in this directory
+
+```
+wget -qO- https://get.nextflow.io | bash
+```
+
+Install openpyxl in a virtualenv (TODO: need a docker container for this):
+
+```
+python3 -m venv py3-env && source py3-env/bin/activate && pip install openpyxl
+```
+
 Using the minimal config settings below run the pipeline
 
 ```
-nexflow run main.nf
+./nextflow run main.nf
 ```
 
-Nextflow will use the `standard` profile by default.
+## Execution on AWS Batch
 
-## config
+A configuration file for AWS Batch execution will look something like this:
 
 ```
 profiles{
@@ -40,3 +56,5 @@ profiles{
     }
 }
 ```
+
+TODO: some high-level guidance on how to learn how to set up Batch.
