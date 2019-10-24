@@ -34,7 +34,7 @@ process run_barcodecop {
     file("${sampleid}_R1_counts.csv")
     file("${sampleid}_R2_counts.csv")
 
-    publishDir params.output, copy: true, overwrite: true
+    // publishDir params.output, copy: true, overwrite: true
 
     """
     barcodecop --csv-counts ${sampleid}_R1_counts.csv --fastq ${R1} --match-filter --quiet ${I1} ${I2} | gzip > ${sampleid}_R1.fq.gz
@@ -68,7 +68,7 @@ process list_files {
     output:
     file("fastq_list.txt") into fastq_list
 
-    publishDir params.output, copy: true, overwrite: true
+    publishDir params.output, copy: true
 
     """
     echo \"${p.join('\n')}\" > fastq_list.txt
@@ -79,15 +79,28 @@ process filter_and_trim {
     container "nghoffman/dada2:release-1.8.0"
 
     input:
-    file(f) from to_filt_trim.collect()
+    file("") from to_filt_trim.collect()
     file("fastq_list.txt") from fastq_list
 
     output:
-    file("*_filt.fastq.gz") into filtered
+    file("filtered/*_filt.fastq.gz") into filtered
 
     """
-    dada2_filter_and_trim.R fastq_list.txt --trim-left 15 --f-trunc 280 --r-trunc 250 --truncq 2 --filt-path .
+    dada2_filter_and_trim.R fastq_list.txt --trim-left 15 --f-trunc 280 --r-trunc 250 --truncq 2 --filt-path filtered/
     """
 }
 
+process dereplicate {
+    container "nghoffman/dada2:release-1.8.0"
 
+    input:
+    file("") from filtered.collect()
+
+    output:
+    file('dada2.rda')
+    file('seqtab_nochim.rda')
+
+    """
+    dada2_dereplicate.R . --rdata dada2.rda --seqtab-nochim seqtab_nochim.rda --max-mismatch 1
+    """
+}
