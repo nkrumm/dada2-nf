@@ -16,7 +16,8 @@ cran_packages <- c(
     "reshape2",
     "rmarkdown",
     "readr",
-    "tidyr"
+    "tidyr",
+    "BiocManager"
 )
 
 install.packages(
@@ -31,11 +32,5 @@ bioc_packages <- c(
     "qrqc"
 )
 
-## source("https://bioconductor.org/biocLite.R")
-biocLite(
-    bioc_packages,
-    suppressUpdates=TRUE,
-    Ncpus=ncores,
-    clean=TRUE)
-
+BiocManager::install(bioc_packages)
 devtools::install_github("benjjneb/dada2", ref=dada2_commit)
