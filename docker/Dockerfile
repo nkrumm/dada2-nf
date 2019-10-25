@@ -5,15 +5,16 @@ ENV DADA2_COMMIT=$DADA2_COMMIT
 
 RUN apt-get update -y && apt-get install -y \
     python3-pip \
-    r-cran-r.utils \
     r-cran-ape \
+    r-cran-biocmanager \
+    r-cran-devtools \
     r-cran-dplyr \
     r-cran-lattice \
     r-cran-latticeextra \
-    r-cran-rmarkdown \
+    r-cran-r.utils \
     r-cran-readr \
-    r-cran-tidyr \
-    r-cran-biocmanager
+    r-cran-rmarkdown \
+    r-cran-tidyr
 
 ADD requirements.txt /tmp/
 RUN pip3 install -r /tmp/requirements.txt

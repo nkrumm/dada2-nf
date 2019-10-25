@@ -18,9 +18,12 @@ install.packages(
     Ncpus=ncores,
     clean=TRUE)
 
+## bioc_packages <- c(
+##     "phyloseq",
+##     "qrqc"
+## )
+
 bioc_packages <- c(
-    "devtools",
-    "phyloseq",
     "qrqc"
 )
 
