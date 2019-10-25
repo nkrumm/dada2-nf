@@ -1,4 +1,4 @@
-FROM bioconductor/release_core2:R3.5.1_Bioc3.7
+FROM bioconductor/release_base2:R3.6.1_Bioc3.9
 
 ARG DADA2_COMMIT
 ENV DADA2_COMMIT=$DADA2_COMMIT
