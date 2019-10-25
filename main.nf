@@ -160,7 +160,7 @@ process write_seqs {
 process cmalign {
     input:
     file("seqs.fasta") from seqs
-    set cm from file("data/ssu-align-0.1.1-bacteria-0p1.cm")
+    file('ssu-align-0.1.1-bacteria-0p1.cm') from file("data/ssu-align-0.1.1-bacteria-0p1.cm")
 
     output:
     file("seqs.sto")
@@ -169,7 +169,7 @@ process cmalign {
     publishDir params.output, overwrite: true
 
     """
-    cmalign --cpu 10 --dnaout --noprob -o seqs.sto --sfile sv_aln_scores.txt ${cm} seqs.fasta
+    cmalign --cpu 10 --dnaout --noprob -o seqs.sto --sfile sv_aln_scores.txt ssu-align-0.1.1-bacteria-0p1.cm seqs.fasta
     """
 }
 
