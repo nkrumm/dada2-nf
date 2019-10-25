@@ -3,6 +3,7 @@ FROM rocker/r-apt:bionic
 ARG DADA2_COMMIT
 ENV DADA2_COMMIT=$DADA2_COMMIT
 
+ADD 99parallel /etc/apt/apt.conf.d/99parallel
 RUN apt-get update -y && apt-get install -y \
     python3-pip \
     r-cran-ape \
