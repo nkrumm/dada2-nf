@@ -1,8 +1,6 @@
 fastq = Channel.fromPath("test/fastq/*").collect()
 sample_info = Channel.fromPath("test/sample-information.csv")
 
-// TODO: READ counts here
-// TODO: output to csv??
 process create_manifest {
   input:
   file("test/sample-information.csv") from sample_info
