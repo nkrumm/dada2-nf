@@ -4,7 +4,6 @@ sample_info = Channel.fromPath("test/sample-information.csv")
 // TODO: READ counts here
 // TODO: output to csv??
 process create_manifest {
-  // container "python:3.6.7-stretch"  Needs openpyxl
   input:
   file("test/sample-information.csv") from sample_info
   file("test/fastq/") from fastq
@@ -21,8 +20,6 @@ process create_manifest {
 
 // TODO: allow barcodecop to work with empty data
 process run_barcodecop {
-    container "barcodecop:latest"
-
     input:
     set sampleid, batch, I1, I2, R1, R2 from manifest.splitCsv(header: true)
     file("test/fastq/") from fastq
@@ -31,20 +28,16 @@ process run_barcodecop {
     set batch, sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into barcodecop
     set batch, val("${sampleid}_R1_.fq.gz"), val("${sampleid}_R2_.fq.gz") into pairs
     set file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into to_filt_trim
-    file("${sampleid}_R1_counts.csv")
-    file("${sampleid}_R2_counts.csv")
 
     publishDir "${params.output}/batch_${batch}/fq/", overwrite: true
 
     """
-    barcodecop --csv-counts ${sampleid}_R1_counts.csv --fastq ${R1} --match-filter --quiet ${I1} ${I2} | gzip > ${sampleid}_R1_.fq.gz
-    barcodecop --csv-counts ${sampleid}_R2_counts.csv --fastq ${R2} --match-filter --quiet ${I1} ${I2} | gzip > ${sampleid}_R2_.fq.gz
+    barcodecop --fastq ${R1} --match-filter --quiet ${I1} ${I2} | gzip > ${sampleid}_R1_.fq.gz
+    barcodecop --fastq ${R2} --match-filter --quiet ${I1} ${I2} | gzip > ${sampleid}_R2_.fq.gz
     """
 }
 
 process plot_quality {
-    container "nghoffman/dada2:release-1.8.0"
-
     input:
     set batch, sampleid, file("fwd.fq.gz"), file("rev.fq.gz") from barcodecop
 
@@ -60,8 +53,6 @@ process plot_quality {
 
 // Channel.toPath - https://github.com/nextflow-io/nextflow/issues/774
 process list_files {
-    container "ubuntu:18.04"
-
     input:
     set batch, val(r1), val(r2) from pairs.groupTuple()
 
@@ -77,8 +68,6 @@ process list_files {
 }
 
 process filter_and_trim {
-    container "nghoffman/dada2:release-1.8.0"
-
     input:
     set batch, file("fastq_list.txt") from batch_list
     file("") from to_filt_trim.collect()
@@ -94,8 +83,6 @@ process filter_and_trim {
 }
 
 process dereplicate {
-    container "nghoffman/dada2:release-1.8.0"
-
     input:
     set batch, file("") from filtered
 
@@ -111,8 +98,6 @@ process dereplicate {
 }
 
 process overlaps {
-    container "nghoffman/dada2:release-1.8.0"
-
     input:
     set batch, file("dada2.rda") from rda
 
@@ -127,8 +112,6 @@ process overlaps {
 }
 
 process list_all_files {
-    container "ubuntu:18.04"
-
     input:
     file("fastq_list_*.txt") from fastq_list.collect()
 
@@ -143,8 +126,6 @@ process list_all_files {
 }
 
 process combined_overlaps {
-    container "ubuntu:18.04"
-
     input:
     file("overlaps_*.csv") from overlaps.collect()
 
@@ -159,8 +140,6 @@ process combined_overlaps {
 }
 
 process write_seqs {
-    container "nghoffman/dada2:release-1.8.0"
-
     input:
     file("seqtab_nochim_*.rda") from seqtab_nochim.collect()
 
@@ -179,8 +158,6 @@ process write_seqs {
 }
 
 process cmalign {
-    // container ""
-
     input:
     file("seqs.fasta") from seqs
     set cm from file("data/ssu-align-0.1.1-bacteria-0p1.cm")
@@ -197,8 +174,6 @@ process cmalign {
 }
 
 process not_16s {
-    container "python:3.6.7-stretch"
-
     input:
     file("sv_aln_scores.txt") from seqs_scores
 
