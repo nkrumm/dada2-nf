@@ -6,18 +6,10 @@ if(nchar(dada2_commit) == 0){
   stop('the environment variable DADA2_COMMIT must be set')
 }
 
+#    "reshape2",
+
 cran_packages <- c(
-    "R.utils",
-    "ape",
-    "argparse",
-    "dplyr",
-    "lattice",
-    "latticeExtra",
-    "reshape2",
-    "rmarkdown",
-    "readr",
-    "tidyr",
-    "BiocManager"
+    "argparse"
 )
 
 install.packages(
