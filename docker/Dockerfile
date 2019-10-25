@@ -22,5 +22,6 @@ ADD install_infernal_and_easel.sh /tmp/
 RUN /tmp/install_infernal_and_easel.sh
 
 ADD install-dada2.R /tmp/
-RUN /usr/local/bin/Rscript /tmp/install-dada2.R
+RUN Rscript /tmp/install-dada2.R
 RUN mkdir -p /app /fh /mnt /run/shm
+
