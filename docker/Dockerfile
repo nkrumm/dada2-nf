@@ -8,7 +8,8 @@ RUN /usr/local/bin/Rscript /tmp/install-dada2.R
 RUN mkdir -p /app /fh /mnt /run/shm
 
 RUN apt-get update -y --fix-missing && apt-get install -y python3-pip
-RUN pip3 install barcodecop==0.4.1 openpyxl
+ADD requirements.txt /tmp/
+RUN pip3 install -r /tmp/requirements.txt
 
 ADD install_infernal_and_easel.sh /tmp/
 RUN /tmp/install_infernal_and_easel.sh
