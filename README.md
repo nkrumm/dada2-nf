@@ -58,3 +58,6 @@ profiles{
 ```
 
 TODO: some high-level guidance on how to learn how to set up Batch.
+
+## Building the Docker container
+
