@@ -23,9 +23,10 @@ install.packages(
 ##     "qrqc"
 ## )
 
-bioc_packages <- c(
-    "qrqc"
-)
+## bioc_packages <- c(
+##     "qrqc"
+## )
 
-BiocManager::install(bioc_packages)
+## BiocManager::install(bioc_packages)
+
 devtools::install_github("benjjneb/dada2", ref=dada2_commit)
