@@ -96,12 +96,17 @@ def main(arguments):
     sampledata = {d['sampleid']: d for d in manifest}
     # make sure all sampleids are unique
     assert len(manifest) == len(sampledata)
-    decorated = []
+    index_reads = []
+    sample_reads = []
     for fastq in glob.glob(os.path.join(args.data_dir, '*.fastq.gz')):
         sample_details = os.path.basename(fastq).split('_')
         sampleid = sample_details[0]
         sample_type = sample_details[3]
         if sampleid in sampledata:
+            if sample_type in ['I1', 'I2']:
+                decorated = index_reads
+            else:
+                decorated = sample_reads
             decorated.append({
                 'batch': sampledata[sampleid]['batch'],
                 'path': fastq,
@@ -109,26 +114,20 @@ def main(arguments):
                 'sample_type': sample_type
             })
     key = operator.itemgetter('sampleid', 'sample_type')
-    decorated = sorted(decorated, key=key)  # sorted for groupby and outfile
-    output = []
-    key = operator.itemgetter('sampleid', 'batch')
-    for (sampleid, batch), group in itertools.groupby(decorated, key=key):
-        group = list(group)
-        assert(len(group) == 4)  # I1, I2, R1, R2
-        output.append({
-            'sampleid': sampleid,
-            'batch': batch,
-            'I1': group[0]['path'],
-            'I2': group[1]['path'],
-            'R1': group[2]['path'],
-            'R2': group[3]['path']
-            })
+    index_reads = sorted(index_reads, key=key)
+    key = operator.itemgetter('sampleid')
+    index_reads_dict = {}
+    for sampleid, group in itertools.groupby(index_reads, key=key):
+        index_reads_dict[sampleid] = list(group)
     outfile = csv.DictWriter(
         args.outfile,
-        fieldnames=['sampleid', 'batch', 'I1', 'I2', 'R1', 'R2'],
+        fieldnames=['sampleid', 'batch', 'sample_type', 'I1', 'I2', 'reads'],
         extrasaction='ignore')
     outfile.writeheader()
-    outfile.writerows(output)
+    for r in sample_reads:
+        i1, i2 = index_reads_dict[r['sampleid']]
+        r.update({'I1': i1['path'], 'I2': i2['path'], 'reads': r['path']})
+        outfile.writerow(r)
 
 
 if __name__ == '__main__':

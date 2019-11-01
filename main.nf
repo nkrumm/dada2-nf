@@ -2,42 +2,81 @@ fastq = Channel.fromPath("test/fastq/*").collect()
 sample_info = Channel.fromPath("test/sample-information.csv")
 
 process create_manifest {
-  input:
-  file("test/sample-information.csv") from sample_info
-  file("test/fastq/") from fastq
+    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
 
-  output:
-  file("manifest.csv") into manifest
-
-  publishDir params.output, overwrite: true
-
-  """
-  manifest.py --outfile manifest.csv test/sample-information.csv test/fastq/
-  """
-}
-
-// TODO: allow barcodecop to work with empty data
-process run_barcodecop {
     input:
-    set sampleid, batch, I1, I2, R1, R2 from manifest.splitCsv(header: true)
+    file("test/sample-information.csv") from sample_info
     file("test/fastq/") from fastq
 
     output:
-    set batch, sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into barcodecop
-    set batch, val("${sampleid}_R1_.fq.gz"), val("${sampleid}_R2_.fq.gz") into pairs
-    set file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into to_filt_trim
+    file("manifest.csv") into manifest
+
+    publishDir params.output, overwrite: true
+
+    """
+    manifest.py --outfile manifest.csv test/sample-information.csv test/fastq/
+    """
+}
+
+// TODO: allow barcodecop to handle empty input and output data
+process barcodecop {
+    input:
+    set sampleid, batch, sample_type, I1, I2, R from manifest.splitCsv(header: true)
+    file("test/fastq/") from fastq
+
+    output:
+    set batch, file("${sampleid}_${sample_type}_counts.csv") into barcode_counts
+    file("${sampleid}_${sample_type}_.fq.gz") into to_filt_trim
+    file("${sampleid}_${sample_type}_.fq.gz") into to_plot
 
     publishDir "${params.output}/batch_${batch}/fq/", overwrite: true
 
     """
-    barcodecop --fastq ${R1} --match-filter --quiet ${I1} ${I2} | gzip > ${sampleid}_R1_.fq.gz
-    barcodecop --fastq ${R2} --match-filter --quiet ${I1} ${I2} | gzip > ${sampleid}_R2_.fq.gz
+    barcodecop --fastq ${R} --match-filter --outfile ${sampleid}_${sample_type}_.fq.gz --read-counts ${sampleid}_${sample_type}_counts.csv --quiet ${I1} ${I2}
+    """
+}
+
+process sample_counts {
+    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
+
+    input:
+    set batch, file("*_counts.csv") from barcode_counts.groupTuple()
+
+    output:
+    set batch, file("counts.csv") into counts
+
+    publishDir "${params.output}/batch_${batch}/", overwrite: true
+
+    """
+    cat *_counts.csv > counts.csv
+    """
+}
+
+// filter empty fq.(gz) files and create fastq lists
+process fastq_list {
+    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
+
+    input:
+    set batch, file("counts.csv") from counts.groupTuple()
+
+    output:
+    set batch, file("fastq_list.txt") into batch_list
+    file("fastq_list.txt") into fastq_list
+    file("samples.csv") into sample_list
+
+    publishDir "${params.output}/batch_${batch}/", overwrite: true
+
+    """
+    fastq_list.py --min-reads 1 --outfile fastq_list.txt --sample-list samples.csv counts.csv ${batch}
     """
 }
 
 process plot_quality {
+    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
+
     input:
-    set batch, sampleid, file("fwd.fq.gz"), file("rev.fq.gz") from barcodecop
+    set batch, sampleid, fwd, rev from sample_list.splitCsv(header: true)
+    file("") from to_plot.collect()
 
     output:
     file("qplot_${sampleid}.svg")
@@ -45,27 +84,13 @@ process plot_quality {
     publishDir "${params.output}/batch_${batch}/qplots/", overwrite: true
 
     """
-    dada2_plot_quality.R fwd.fq.gz rev.fq.gz --f-trunc 280 -o qplot_${sampleid}.svg --r-trunc 250 --title \"${sampleid} (batch ${batch})\" --trim-left 15
-    """
-}
-
-// Channel.toPath - https://github.com/nextflow-io/nextflow/issues/774
-process list_files {
-    input:
-    set batch, val(r1), val(r2) from pairs.groupTuple()
-
-    output:
-    set batch, file("fastq_list.txt") into batch_list
-    file("fastq_list.txt") into fastq_list
-
-    publishDir "${params.output}/batch_${batch}/", overwrite: true
-
-    """
-    echo \"${r1.join('\n')}\n${r2.join('\n')} \" > fastq_list.txt
+    dada2_plot_quality.R ${fwd} ${rev} --f-trunc 280 -o qplot_${sampleid}.svg --r-trunc 250 --title \"${sampleid} (batch ${batch})\" --trim-left 15
     """
 }
 
 process filter_and_trim {
+    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
+
     input:
     set batch, file("fastq_list.txt") from batch_list
     file("") from to_filt_trim.collect()
@@ -81,6 +106,8 @@ process filter_and_trim {
 }
 
 process dereplicate {
+    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
+
     input:
     set batch, file("") from filtered
 
@@ -96,6 +123,8 @@ process dereplicate {
 }
 
 process overlaps {
+    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
+
     input:
     set batch, file("dada2.rda") from rda
 
@@ -110,6 +139,8 @@ process overlaps {
 }
 
 process list_all_files {
+    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
+
     input:
     file("fastq_list_*.txt") from fastq_list.collect()
 
@@ -124,6 +155,8 @@ process list_all_files {
 }
 
 process combined_overlaps {
+    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
+
     input:
     file("overlaps_*.csv") from overlaps.collect()
 
@@ -138,6 +171,8 @@ process combined_overlaps {
 }
 
 process write_seqs {
+    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
+
     input:
     file("seqtab_nochim_*.rda") from seqtab_nochim.collect()
 
@@ -156,6 +191,8 @@ process write_seqs {
 }
 
 process cmalign {
+    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
+
     input:
     file("seqs.fasta") from seqs
     file('ssu-align-0.1.1-bacteria-0p1.cm') from file("data/ssu-align-0.1.1-bacteria-0p1.cm")
@@ -172,6 +209,8 @@ process cmalign {
 }
 
 process not_16s {
+    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
+
     input:
     file("sv_aln_scores.txt") from seqs_scores
 
@@ -184,3 +223,4 @@ process not_16s {
     read_cmscores.py --min-bit-score 0 -o not_16s.txt sv_aln_scores.txt
     """
 }
+
