@@ -52,7 +52,6 @@ process sample_counts {
     """
 }
 
-// filter empty fq.(gz) files and create fastq lists
 process fastq_list {
     container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
 
@@ -88,11 +87,12 @@ process plot_quality {
     """
 }
 
+// TODO: consider handling empty fastqs in dada2_filter_and_trim.R
 process filter_and_trim {
     container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
 
     input:
-    set batch, file("fastq_list.txt") from batch_list
+    set batch, file("fastq_list.txt") from batch_list.filter{r -> !file(r[1]).isEmpty()}
     file("") from to_filt_trim.collect()
 
     output:
