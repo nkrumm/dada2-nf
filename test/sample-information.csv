@@ -2,9 +2,11 @@ sampleid,sample_name,n_index,s_index,project,batch,controls
 m3n701-s502,11806,n701,s502,trichomonas,1,
 m3n701-s503,11806,n701,s503,trichomonas,1,
 m3n701-s505,12434,n701,s505,trichomonas,1,
+m3n701-s506,12434,n701,s506,trichomonas,1,
 m3n714-s510,illumina_ntc1,n714,s510,trichomonas,1,water
 m3n714-s511,illumina_ntc2,n714,s511,trichomonas,1,water
 m3n716-s502,18992,n716,s502,trichomonas,2,
 m3n716-s503,18992,n716,s503,trichomonas,2,
 m3n718-s502,19137,n718,s502,trichomonas,2,
 m3n726-s507,illumina_ntc3,n726,s507,trichomonas,2,water
+empty-empty,,,,,2,
