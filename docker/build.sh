@@ -9,11 +9,12 @@ if ! git diff-index --quiet HEAD; then
     exit 1
 fi
 
-tag=${1-v1.12}
+repo=dada2-nf
+version=${1-v1.12}
 rev=$(git describe --tags --dirty)
-python3 get_tag.py $tag > /dev/null
-DADA2_COMMIT=$(python3 get_tag.py $tag)
-echo "building image dada2:$tag from commit $DADA2_COMMIT"
+python3 get_tag.py $version > /dev/null
+DADA2_COMMIT=$(python3 get_tag.py $version)
+tag="${repo}:${version}-${rev}"
 
-time docker build --build-arg DADA2_COMMIT=$DADA2_COMMIT \
-     --rm --force-rm -t dada2:${tag}-${rev} .
+echo "building image $tag from commit $DADA2_COMMIT"
+time docker build --build-arg DADA2_COMMIT=$DADA2_COMMIT --rm --force-rm -t "$tag" .

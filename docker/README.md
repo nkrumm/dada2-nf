@@ -25,10 +25,17 @@ release-<dada2-version>-<repo-version>
 where ```dada2-version``` corresponds to a dada2 release, and
 ```repo-version``` is the output of ``git describe --tags --dirty``.
 
-## Triggering builds
+## Publishing images
 
-The automated build on DockerHub seems not to be triggered by a push
-as advertised. An image corresponding to a specified tag can be
-triggered using an API as described under "Build Settings" --> "Build
-Triggers"
-(https://hub.docker.com/r/nghoffman/dada2/~/settings/automated-builds/)
+Images are hosted at https://quay.io/nhoffman/dada2-nf
+
+To push the most recent image:
+
+```
+image=$(docker images dada2 --format "{{.Repository}}:{{.Tag}}" | head -n1)
+docker run "$image" echo "$image"
+image_id=$(docker ps -l | grep $tag | cut -d' ' -f1)
+docker commit $image_id "quay.io/nhoffman/$image"
+docker push "quay.io/nhoffman/$image"
+```
+
