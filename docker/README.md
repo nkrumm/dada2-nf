@@ -4,18 +4,26 @@ This repository contains a Dockerfile for building a Docker image
 inheriting from r-base with a specified release version of the dada2
 package installed.
 
+## Building
+
+Create the Docker image locally like this:
+
+```
+./build.sh
+```
+
+An optional first argument can be used to specify the dada2 version.
+
 ## Version numbering
 
 Images are tagged using the format
 
 ```
-release-<dada2-version>[<image-version>]
+release-<dada2-version>-<repo-version>
 ```
 
 where ```dada2-version``` corresponds to a dada2 release, and
-```image-version``` is a single lowercase letter indicating an
-incremental change to the image for a given version of dada2. Some
-examples: ```release-1.4.1```, ```release-1.4.1a```
+```repo-version``` is the output of ``git describe --tags --dirty``.
 
 ## Triggering builds
 
