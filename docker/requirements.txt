@@ -1,2 +1,2 @@
-barcodecop==0.4.1
-openpyxl
+barcodecop==0.5
+openpyxl==3.0.0
