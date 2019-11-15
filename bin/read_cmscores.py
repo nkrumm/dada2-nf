@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Read cmalign alignment scores and provide a list of sequences with
 a score below some threshold.
@@ -16,7 +16,8 @@ def main(arguments):
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('infile', help="output of cmalign --sfile", type=argparse.FileType('r'))
+    parser.add_argument('infile', help="output of cmalign --sfile",
+                        type=argparse.FileType('r'))
     parser.add_argument('-o', '--outfile', help="Output file",
                         default=sys.stdout, type=argparse.FileType('w'))
     parser.add_argument('--min-bit-score', type=int, default=0,
@@ -24,8 +25,9 @@ def main(arguments):
 
     args = parser.parse_args(arguments)
 
-    colnames = ['idx', 'seq_name', 'length', 'cm_from', 'cm_to', 'trunc', 'bit_sc', 'avg_pp',
-                'band_calc', 'alignment', 'total', 'mem']
+    colnames = ['idx', 'seq_name', 'length', 'cm_from', 'cm_to',
+                'trunc', 'bit_sc', 'avg_pp', 'band_calc', 'alignment',
+                'total', 'mem']
 
     lines = [dict(zip(colnames, line.split()))
              for line in args.infile if not line.startswith('#')]
