@@ -32,10 +32,8 @@ Images are hosted at https://quay.io/nhoffman/dada2-nf
 To push the most recent image:
 
 ```
-image=$(docker images dada2 --format "{{.Repository}}:{{.Tag}}" | head -n1)
-docker run "$image" echo "$image"
-image_id=$(docker ps -l | grep $tag | cut -d' ' -f1)
-docker commit $image_id "quay.io/nhoffman/$image"
+image=$(docker images dada2-nf --format "{{.Repository}}:{{.Tag}}" | head -n1)
+docker tag $image "quay.io/nhoffman/$image"
 docker push "quay.io/nhoffman/$image"
 ```
 
