@@ -6,8 +6,6 @@ if(nchar(dada2_commit) == 0){
   stop('the environment variable DADA2_COMMIT must be set')
 }
 
-#    "reshape2",
-
 cran_packages <- c(
     "argparse"
 )
@@ -18,15 +16,10 @@ install.packages(
     Ncpus=ncores,
     clean=TRUE)
 
-## bioc_packages <- c(
-##     "phyloseq",
-##     "qrqc"
-## )
+bioc_packages <- c(
+    "qrqc"
+)
 
-## bioc_packages <- c(
-##     "qrqc"
-## )
-
-## BiocManager::install(bioc_packages)
+BiocManager::install(bioc_packages)
 
 devtools::install_github("benjjneb/dada2", ref=dada2_commit)
