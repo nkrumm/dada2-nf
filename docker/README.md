@@ -16,14 +16,19 @@ An optional first argument can be used to specify the dada2 version.
 
 ## Version numbering
 
-Images are tagged using the format
+Images are tagged using the value of ``git describe --tags --dirty``
+for this repository. The repo will have annotated tags corresponding
+to the dada2 release version. A tagged image will therefore have the format
 
 ```
-release-<dada2-version>-<repo-version>
+<dada2-version>[-<commits-since-tag>-<short-sha>]
 ```
 
-where ```dada2-version``` corresponds to a dada2 release, and
-```repo-version``` is the output of ``git describe --tags --dirty``.
+For example:
+
+```
+dada2-nf:v1.12-5-g385b439
+```
 
 ## Publishing images
 
