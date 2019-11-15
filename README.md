@@ -53,5 +53,7 @@ profiles{
 
 TODO: some high-level guidance on how to learn how to set up Batch.
 
+## Development tips
 
-
+- force local execution without docker for a specific task by
+  including ``container null`` within the process definition
