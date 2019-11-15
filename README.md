@@ -10,12 +10,6 @@ Install the nextflow binary in this directory
 wget -qO- https://get.nextflow.io | bash
 ```
 
-Install openpyxl in a virtualenv (TODO: need a docker container for this):
-
-```
-python3 -m venv py3-env && source py3-env/bin/activate && pip install openpyxl
-```
-
 Using the minimal config settings below run the pipeline
 
 ```
@@ -59,5 +53,5 @@ profiles{
 
 TODO: some high-level guidance on how to learn how to set up Batch.
 
-## Building the Docker container
+
 
