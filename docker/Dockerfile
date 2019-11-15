@@ -16,7 +16,8 @@ RUN apt-get update -y && apt-get install -y \
     r-cran-readr \
     r-cran-rmarkdown \
     r-cran-tidyr \
-    libcurl4-openssl-dev
+    libcurl4-openssl-dev \
+    wget
 
 ADD requirements.txt /tmp/
 RUN pip3 install -r /tmp/requirements.txt
