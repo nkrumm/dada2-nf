@@ -2,7 +2,8 @@ fastq = Channel.fromPath("test/fastq/*").collect()
 sample_info = Channel.fromPath("test/sample-information.csv")
 
 process create_manifest {
-    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
+
+    // container null
 
     input:
     file("test/sample-information.csv") from sample_info
@@ -37,7 +38,6 @@ process barcodecop {
 }
 
 process sample_counts {
-    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
 
     input:
     set batch, file("*_counts.csv") from barcode_counts.groupTuple()
@@ -53,7 +53,6 @@ process sample_counts {
 }
 
 process fastq_list {
-    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
 
     input:
     set batch, file("counts.csv") from counts.groupTuple()
@@ -70,26 +69,24 @@ process fastq_list {
     """
 }
 
-process plot_quality {
-    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
+// process plot_quality {
 
-    input:
-    set batch, sampleid, fwd, rev from sample_list.splitCsv(header: true)
-    file("") from to_plot.collect()
+//     input:
+//     set batch, sampleid, fwd, rev from sample_list.splitCsv(header: true)
+//     file("") from to_plot.collect()
 
-    output:
-    file("qplot_${sampleid}.svg")
+//     output:
+//     file("qplot_${sampleid}.svg")
 
-    publishDir "${params.output}/batch_${batch}/qplots/", overwrite: true
+//     publishDir "${params.output}/batch_${batch}/qplots/", overwrite: true
 
-    """
-    dada2_plot_quality.R ${fwd} ${rev} --f-trunc 280 -o qplot_${sampleid}.svg --r-trunc 250 --title \"${sampleid} (batch ${batch})\" --trim-left 15
-    """
-}
+//     """
+//     dada2_plot_quality.R ${fwd} ${rev} --f-trunc 280 -o qplot_${sampleid}.svg --r-trunc 250 --title \"${sampleid} (batch ${batch})\" --trim-left 15
+//     """
+// }
 
 // TODO: consider handling empty fastqs in dada2_filter_and_trim.R
 process filter_and_trim {
-    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
 
     input:
     set batch, file("fastq_list.txt") from batch_list.filter{r -> !file(r[1]).isEmpty()}
@@ -106,7 +103,6 @@ process filter_and_trim {
 }
 
 process dereplicate {
-    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
 
     input:
     set batch, file("") from filtered
@@ -123,7 +119,6 @@ process dereplicate {
 }
 
 process overlaps {
-    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
 
     input:
     set batch, file("dada2.rda") from rda
@@ -139,7 +134,6 @@ process overlaps {
 }
 
 process list_all_files {
-    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
 
     input:
     file("fastq_list_*.txt") from fastq_list.collect()
@@ -155,7 +149,6 @@ process list_all_files {
 }
 
 process combined_overlaps {
-    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
 
     input:
     file("overlaps_*.csv") from overlaps.collect()
@@ -171,7 +164,6 @@ process combined_overlaps {
 }
 
 process write_seqs {
-    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
 
     input:
     file("seqtab_nochim_*.rda") from seqtab_nochim.collect()
@@ -191,7 +183,6 @@ process write_seqs {
 }
 
 process cmalign {
-    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
 
     input:
     file("seqs.fasta") from seqs
@@ -209,7 +200,6 @@ process cmalign {
 }
 
 process not_16s {
-    container "quay.io/nhoffman/dada2-nf:v1.12-0.1-4-g0149c71"
 
     input:
     file("sv_aln_scores.txt") from seqs_scores
