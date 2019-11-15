@@ -16,10 +16,11 @@ install.packages(
     Ncpus=ncores,
     clean=TRUE)
 
+devtools::install_github("benjjneb/dada2", ref=dada2_commit)
+
 bioc_packages <- c(
     "qrqc"
 )
 
 BiocManager::install(bioc_packages)
 
-devtools::install_github("benjjneb/dada2", ref=dada2_commit)
