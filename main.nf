@@ -33,7 +33,11 @@ process barcodecop {
     publishDir "${params.output}/batch_${batch}/fq/", overwrite: true
 
     """
-    barcodecop --fastq ${R} --match-filter --outfile ${sampleid}_${sample_type}_.fq.gz --read-counts ${sampleid}_${sample_type}_counts.csv --quiet ${I1} ${I2}
+    barcodecop --fastq ${R} \
+    	       --match-filter \
+	       --outfile ${sampleid}_${sample_type}_.fq.gz \
+	       --read-counts ${sampleid}_${sample_type}_counts.csv \
+	       --quiet ${I1} ${I2}
     """
 }
 
