@@ -73,21 +73,21 @@ process fastq_list {
     """
 }
 
-process plot_quality {
+// process plot_quality {
 
-    input:
-    set batch, sampleid, fwd, rev from sample_list.splitCsv(header: true)
-    file("") from to_plot.collect()
+//     input:
+//     set batch, sampleid, fwd, rev from sample_list.splitCsv(header: true)
+//     file("") from to_plot.collect()
 
-    output:
-    file("qplot_${sampleid}.svg")
+//     output:
+//     file("qplot_${sampleid}.svg")
 
-    publishDir "${params.output}/batch_${batch}/qplots/", overwrite: true
+//     publishDir "${params.output}/batch_${batch}/qplots/", overwrite: true
 
-    """
-    dada2_plot_quality.R ${fwd} ${rev} --f-trunc 280 -o qplot_${sampleid}.svg --r-trunc 250 --title \"${sampleid} (batch ${batch})\" --trim-left 15
-    """
-}
+//     """
+//     dada2_plot_quality.R ${fwd} ${rev} --f-trunc 280 -o qplot_${sampleid}.svg --r-trunc 250 --title \"${sampleid} (batch ${batch})\" --trim-left 15
+//     """
+// }
 
 // TODO: consider handling empty fastqs in dada2_filter_and_trim.R
 process filter_and_trim {
