@@ -1,0 +1,42 @@
+{
+    "jobDefinitionName": "quay-io-nhoffman-dada2-nf",
+    "type": "container",
+    "containerProperties": {
+        "image": "quay.io/nhoffman/dada2-nf:v1.12-9-g39fa45b",
+        "jobRoleArn": "arn:aws:iam::012345678910:role/AWSBatchS3ReadOnly",
+        "vcpus": 1,
+        "memory": 1024,
+        "command": [
+          "true"
+        ],
+        "volumes": [
+            {
+                "host": {
+                    "sourcePath": "/home/ec2-user/miniconda"
+                },
+                "name": "aws-cli"
+            },
+            {
+                "host": {
+                    "sourcePath": "/docker_scratch"
+                },
+                "name": "vol-1"
+            }
+        ],
+        "environment": [],
+        "mountPoints": [
+            {
+                "containerPath": "/home/ec2-user/miniconda",
+                "readOnly": true,
+                "sourceVolume": "aws-cli"
+            },
+            {
+                "containerPath": "/tmp",
+                "readOnly": false,
+                "sourceVolume": "vol-1"
+            }
+        ],
+        "ulimits": [],
+        "resourceRequirements": []
+    }
+}
