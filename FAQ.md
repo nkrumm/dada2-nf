@@ -143,7 +143,7 @@ to view an AWS S3 bucket (see below).
 ### How can I see files in my s3 bucket folder?
 
 ```
- aws s3 ls --human-readable --recursive s3://mybucket/folder/
+ aws s3 ls --human-readable s3://mybucket/folder/
 ```
 
 ### How do I clean up my s3 bucket folder?
