@@ -8,7 +8,9 @@ between Job requests and the Compute Environment.
 
 https://docs.aws.amazon.com/batch/latest/userguide/what-is-batch.html
 
-Starting with a simple example using this utility:
+### Simple example
+
+Using this utility:
 
 https://gitlab.labmed.uw.edu/crosenth/aws_batch/
 
@@ -54,7 +56,7 @@ container from utilizing more than the requested amount.  Think of CPU
 allocation as a floor requirment and the RAM requirement as a ceiling 
 requirement.
 
-What Compute Environments, Queues and Job Definitions are available?
+### What Compute Environments, Queues and Job Definitions are available?
 
 Using the awscli (pip install awscli):
 
@@ -67,7 +69,7 @@ aws batch describe-job-definitions
 ...
 ```
 
-How do I create my own Job Definitions?
+### How do I create my own Job Definitions?
 
 Docker containers are registered with the following command:
 
@@ -111,17 +113,40 @@ Container to the give users the ability to move data in and out of the
 Container for processing.  The awscli can also be installed to the Container
 itself from Docker Image and Dockerfile.
 
-What does it mean if I get this error ... ?
+Also notice, containers without an entry point must be configured 
+`"command": [ "true"  ]`.
 
-How can I test my aws credentials?
+### What does this error mean?
 
-How can I see files in my s3 bucket folder?
+```
+Process `...` terminated for an unknown reason -- Likely it has been terminated by the external system
+```
+
+This error indicates a problem with the Job Definition configuration or the
+location of the awscli tool.  
+
+Also see: https://www.nextflow.io/docs/latest/awscloud.html#troubleshooting
+
+### How can I test my aws credentials?
+
+Easiest way to test or generate aws credentials is to execute the following
+using the awscli tool (pip install awscli):
+
+```
+aws configure
+```
+
+By default the credentials are stored in the $HOME directory in the
+`~/.aws/credentials` file.  A further test of credentials could be attempting
+to view an AWS S3 bucket (see below).
+
+### How can I see files in my s3 bucket folder?
 
 ```
  aws s3 ls --human-readable --recursive s3://mybucket/folder/
 ```
 
-How do I clean up my s3 bucket folder?
+### How do I clean up my s3 bucket folder?
 
 Use the `--recursive` command to remove an entire folder:
 
