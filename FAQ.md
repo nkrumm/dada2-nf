@@ -14,7 +14,7 @@ https://docs.aws.amazon.com/batch/latest/userguide/what-is-batch.html
 
 Using this utility:
 
-https://gitlab.labmed.uw.edu/crosenth/aws_batch/
+https://github.com/crosenth/aws_batch
 
 A simple Batch request (with some verbosity) looks like this:
 
