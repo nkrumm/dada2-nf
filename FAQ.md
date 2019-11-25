@@ -43,6 +43,20 @@ minimum resource requirements based on availability in a region and pricing
 to satisfy the requirements defined in a Job or Job Definition.  The Batch 
 minimum resource requirements are 1 cpu and 4 MB of RAM.  
 
+### How can I tell which EC2 instance type was allocated for my Job?
+
+The EC2 instance can be determined using the AWS Instance Metadata Service by
+executing the following using wget (or curl) as part of the Job request:
+
+```
+aws_batch --job-queue optimal --command "wget -O - -q http://169.254.169.254/latest/meta-data/instance-type" ubuntu-18-04
+c4.2xlarge
+```
+
+For more information on using the Instance Metadata Service see
+
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html
+
 ### Specifying job resources
 
 If a Job is expected to exceed the resource requirements defined in a Job
