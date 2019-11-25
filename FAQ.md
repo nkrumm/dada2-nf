@@ -1,3 +1,5 @@
+# FAQ
+
 AWS Batch is a way to execute Docker Containers using AWS ECS instances 
 on-demand.  A simple AWS Batch environment consists of a Compute 
 Environment, a Job Queue, a Job Definition and a Job.  Simply, a Compute 
@@ -68,6 +70,14 @@ aws batch describe-queues
 aws batch describe-job-definitions
 ...
 ```
+
+For a full list of commands:
+
+```
+aws batch help
+```
+
+Note: many of the commands are only available to AWS admins
 
 ### How do I create my own Job Definitions?
 
