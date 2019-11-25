@@ -57,6 +57,20 @@ For more information on using the Instance Metadata Service see
 
 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html
 
+### Can I view other Job requests being executed on a container instance?
+
+You can view all Job tasks currently being executed within an EC2 Instance
+using AWS ECS Container Agent Introspection by running wget (or curl) on 
+port 51678 from localhost:
+
+```
+wget -O - -q http://localhost:51678/v1/tasks"
+```
+
+For more information on using ECS Container Agent Introspection:
+
+https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-introspection.html
+
 ### Specifying job resources
 
 If a Job is expected to exceed the resource requirements defined in a Job
