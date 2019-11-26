@@ -1,21 +1,22 @@
-# Frequently asked questions, tips, and tricks
+# FAQ
 
-## What should I know about AWS Batch?
-
-AWS Batch is a way to "spin up" AWS ECS instances on-demand in order to execute
-Docker Containers.  A simple AWS Batch environment consists of a Compute
-Environment, a Job Queue, a Job Definition and a Job.  Simply, the Compute
-Environment manages EC2/SPOT instances, the Job Queue is the entry point for
-Job requests, the Job Definition is a registered Docker Container and the Job
-is a request to do some work using a Job Definition (or Docker Container).
+AWS Batch is a way to execute Docker Containers using AWS ECS instances 
+on-demand.  A simple AWS Batch environment consists of a Compute 
+Environment, a Job Queue, a Job Definition and a Job.  Simply, a Compute 
+Environment manages EC2/SPOT instances, the Job Definition is a 
+registered Docker Container, a Job request is some work instruction
+pointing toa Job Definition (Docker Container) and a Job Queue acts a gateway
+between Job requests and the Compute Environment.
 
 https://docs.aws.amazon.com/batch/latest/userguide/what-is-batch.html
 
-Let us start with a simple example.  Using this utility:
+### Simple example
 
-https://gitlab.labmed.uw.edu/crosenth/aws_batch/
+Using this utility:
 
-A simple Batch request (with some verbosity) could look like this:
+https://github.com/crosenth/aws_batch
+
+A simple Batch request (with some verbosity) looks like this:
 
 ```
 aws_batch -v --job-queue optimal --command 'echo hello world' ubuntu-18-04
@@ -27,49 +28,86 @@ hello world
 SUCCEEDED
 ```
 
-## How do I understand resource allocation?
+### How do I understand resource allocation?
 
-Resource allocation defines which EC2/SPOT instance will chosen to run your
+Resource allocation defines which EC2/SPOT instance will be chosen to run your
 Job request. Resource allocation can be defined at any point in the Batch
 process with the Batch Job having the final word on how much compute resources
 it needs to execute properly.  EC2 instances come in a variety of CPU and RAM
-combinations:
+combinations: 
 
 https://aws.amazon.com/ec2/instance-types/
 
 Compute Environment by default will choose an EC2 instances that meets the
 minimum resource requirements based on availability in a region and pricing
-to satisfy the requirements defined in a Job or Job Definition.  The Batch
-minimum resource requirements are 1 cpu and 4 MB of RAM.  Given those
-requirements expect to to be allocated an EC2 instance with 2 CPUs and 4-8 GB
-of RAM depending on region and availability.
+to satisfy the requirements defined in a Job or Job Definition.  The Batch 
+minimum resource requirements are 1 cpu and 4 MB of RAM.  
 
-## What if my Job requires more resources?
+### How can I tell which EC2 instance type was allocated for my Job?
+
+The EC2 instance can be determined using the AWS Instance Metadata Service by
+executing the following using wget (or curl) as part of the Job request:
+
+```
+aws_batch --job-queue optimal --command "wget -O - -q http://169.254.169.254/latest/meta-data/instance-type" ubuntu-18-04
+c4.2xlarge
+```
+
+For more information on using the Instance Metadata Service see
+
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html
+
+### Can I view other Job requests being executed on a container instance?
+
+You can view all Job tasks currently being executed within an EC2 Instance
+using AWS ECS Container Agent Introspection by running wget (or curl) on 
+port 51678 from localhost:
+
+```
+wget -O - -q http://localhost:51678/v1/tasks"
+```
+
+For more information on using ECS Container Agent Introspection:
+
+https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-introspection.html
+
+### Specifying job resources
 
 If a Job is expected to exceed the resource requirements defined in a Job
-Definition the Job can override those minimum requirements to request a larger
-EC2 instance.  Defining a higher number of CPUs and more memory will also be
+Definition the Job can override the Job Definition.
+Defining a higher number of CPUs and more memory will also be 
 mapped to the Docker run arguments `--cpu-shares` and `--memory`:
 
 https://docs.docker.com/config/containers/resource_constraints/
 
 Keep in mind `--cpu-shares` will not prevent Docker containers from utilizing
-every CPU available in an EC2 instance but `--memory` *will* prevent a Docker
-container from utilizing more than the requested amount.  In other words,
-expect CPU allocation to behave as a floor requirment and RAM requirement a
-ceiling requirement.
+every CPU available in an EC2 instance but `--memory` *will* prevent a Docker 
+container from utilizing more than the requested amount.  Think of CPU 
+allocation as a floor requirment and the RAM requirement as a ceiling 
+requirement.
 
-# What Compute Environments, Queues and Job Definitions are available?
+### What Compute Environments, Queues and Job Definitions are available?
 
 Using the awscli (pip install awscli):
 
 ```
-aws batch describe-compute-environments > environments.txt
-aws batch describe-queues > queues.txt
-aws batch describe-job-definitions > job-definitions.txt
+aws batch describe-compute-environments
+...
+aws batch describe-queues
+...
+aws batch describe-job-definitions
+...
 ```
 
-## How do I create my own Job Definitions?
+For a full list of commands:
+
+```
+aws batch help
+```
+
+Note: many of the commands are only available to AWS admins
+
+### How do I create my own Job Definitions?
 
 Docker containers are registered with the following command:
 
@@ -109,21 +147,44 @@ The jobDefinition.json file could look something like this:
 ```
 
 For this example the awscli is mounted from the EC2 instance into the Docker
-Container to the give users the ability to move data in and out of the Docker
+Container to the give users the ability to move data in and out of the
 Container for processing.  The awscli can also be installed to the Container
-itself depending on the Docker Image and Dockerfile.
+itself from Docker Image and Dockerfile.
 
-## What does it mean if I get this error ... ?
+Also notice, containers without an entry point must be configured 
+`"command": [ "true"  ]`.
 
-## How can I test my aws credentials?
-
-## How can I see files in my s3 bucket folder?
+### What does this error mean?
 
 ```
- aws s3 ls --human-readable --recursive s3://mybucket/folder/
+Process `...` terminated for an unknown reason -- Likely it has been terminated by the external system
 ```
 
-## How do I clean up my s3 bucket folder?
+This error indicates a problem with the Job Definition configuration or the
+location of the awscli tool.  
+
+Also see: https://www.nextflow.io/docs/latest/awscloud.html#troubleshooting
+
+### How can I test my aws credentials?
+
+Easiest way to test or generate aws credentials is to execute the following
+using the awscli tool (pip install awscli):
+
+```
+aws configure
+```
+
+By default the credentials are stored in the $HOME directory in the
+`~/.aws/credentials` file.  A further test of credentials could be attempting
+to view an AWS S3 bucket (see below).
+
+### How can I see files in my s3 bucket folder?
+
+```
+ aws s3 ls --human-readable s3://mybucket/folder/
+```
+
+### How do I clean up my s3 bucket folder?
 
 Use the `--recursive` command to remove an entire folder:
 
@@ -142,24 +203,3 @@ For information on additional, useful options:
 ```
 aws s3 rm help
 ```
-
-## How do I force local execution of a task without Docker?
-
-Include ``container null`` within the process definition.
-
-## How can I test and develop individual steps of the pipeline?
-
-This pipeline was designed to minimize the logic and inline code in
-Nextflow. Invocations of the ``dada2`` package are make via scripts in
-``bin/``. One pattern for testing and development is to execute an
-individual script in the docker environment using files produced by
-local execution of the pipeline. For example:
-
-```
-docker run --rm -it -v $(pwd):$(pwd) -w $(pwd) \
-	quay.io/nhoffman/dada2-nf:v1.12-9-g39fa45b bin/dada2_learn_errors.R \
-	output/batch_1/filtered --model errors.rds
-```
-
-This makes it possible to iteratively develop the scripts, add print
-statements, examine output, etc, outside the context of the pipeline.
