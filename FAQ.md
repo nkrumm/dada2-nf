@@ -6,8 +6,8 @@ AWS Batch is a way to execute Docker Containers using AWS ECS instances
 on-demand.  A simple AWS Batch environment consists of a Compute
 Environment, a Job Queue, a Job Definition and a Job.  Simply, a Compute
 Environment manages EC2/SPOT instances, the Job Definition is a
-registered Docker Container, a Job request is some work instruction
-pointing toa Job Definition (Docker Container) and a Job Queue acts a gateway
+registered Docker Container, a Job request is some defined work to be done 
+using a Job Definition (Docker Container) and a Job Queue acts a gateway
 between Job requests and the Compute Environment.
 
 https://docs.aws.amazon.com/batch/latest/userguide/what-is-batch.html
@@ -40,10 +40,11 @@ combinations:
 
 https://aws.amazon.com/ec2/instance-types/
 
-Compute Environment by default will choose an EC2 instances that meets the
-minimum resource requirements based on availability in a region and pricing
-to satisfy the requirements defined in a Job or Job Definition.  The Batch
-minimum resource requirements are 1 cpu and 4 MB of RAM.
+The Compute Environment, by default, will choose an EC2 instances
+that meets the minimum resource requirements based on availability in a region,
+pricing and EC2 start up time to satisfy the requirements defined in a Job or
+Job Definition.  The minimum requirements for any Batch Job are 1 cpu and 
+4 MiB of RAM.
 
 ### How can I tell which EC2 instance type was allocated for my Job?
 
@@ -148,15 +149,15 @@ The jobDefinition.json file could look something like this:
 }
 ```
 
-For this example the awscli is mounted from the EC2 instance into the Docker
+In this example the awscli is mounted from the EC2 instance into the Docker
 Container to the give users the ability to move data in and out of the
 Container for processing.  The awscli can also be installed to the Container
 itself from Docker Image and Dockerfile.
 
-Also notice, containers without an entry point must be configured
-`"command": [ "true"  ]`.
+Also note: Containers without an entry point must be configured
+`"command": [ "true"  ].
 
-### What does this error mean?
+### What does this Nextflow error mean?
 
 ```
 Process `...` terminated for an unknown reason -- Likely it has been terminated by the external system
