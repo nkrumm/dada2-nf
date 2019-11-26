@@ -1,9 +1,11 @@
-# FAQ
+# Frequently asked question, tips, and tricks
 
-AWS Batch is a way to execute Docker Containers using AWS ECS instances 
-on-demand.  A simple AWS Batch environment consists of a Compute 
-Environment, a Job Queue, a Job Definition and a Job.  Simply, a Compute 
-Environment manages EC2/SPOT instances, the Job Definition is a 
+## AWS Batch
+
+AWS Batch is a way to execute Docker Containers using AWS ECS instances
+on-demand.  A simple AWS Batch environment consists of a Compute
+Environment, a Job Queue, a Job Definition and a Job.  Simply, a Compute
+Environment manages EC2/SPOT instances, the Job Definition is a
 registered Docker Container, a Job request is some work instruction
 pointing toa Job Definition (Docker Container) and a Job Queue acts a gateway
 between Job requests and the Compute Environment.
@@ -34,14 +36,14 @@ Resource allocation defines which EC2/SPOT instance will be chosen to run your
 Job request. Resource allocation can be defined at any point in the Batch
 process with the Batch Job having the final word on how much compute resources
 it needs to execute properly.  EC2 instances come in a variety of CPU and RAM
-combinations: 
+combinations:
 
 https://aws.amazon.com/ec2/instance-types/
 
 Compute Environment by default will choose an EC2 instances that meets the
 minimum resource requirements based on availability in a region and pricing
-to satisfy the requirements defined in a Job or Job Definition.  The Batch 
-minimum resource requirements are 1 cpu and 4 MB of RAM.  
+to satisfy the requirements defined in a Job or Job Definition.  The Batch
+minimum resource requirements are 1 cpu and 4 MB of RAM.
 
 ### How can I tell which EC2 instance type was allocated for my Job?
 
@@ -60,7 +62,7 @@ https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html
 ### Can I view other Job requests being executed on a container instance?
 
 You can view all Job tasks currently being executed within an EC2 Instance
-using AWS ECS Container Agent Introspection by running wget (or curl) on 
+using AWS ECS Container Agent Introspection by running wget (or curl) on
 port 51678 from localhost:
 
 ```
@@ -75,15 +77,15 @@ https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-introspect
 
 If a Job is expected to exceed the resource requirements defined in a Job
 Definition the Job can override the Job Definition.
-Defining a higher number of CPUs and more memory will also be 
+Defining a higher number of CPUs and more memory will also be
 mapped to the Docker run arguments `--cpu-shares` and `--memory`:
 
 https://docs.docker.com/config/containers/resource_constraints/
 
 Keep in mind `--cpu-shares` will not prevent Docker containers from utilizing
-every CPU available in an EC2 instance but `--memory` *will* prevent a Docker 
-container from utilizing more than the requested amount.  Think of CPU 
-allocation as a floor requirment and the RAM requirement as a ceiling 
+every CPU available in an EC2 instance but `--memory` *will* prevent a Docker
+container from utilizing more than the requested amount.  Think of CPU
+allocation as a floor requirment and the RAM requirement as a ceiling
 requirement.
 
 ### What Compute Environments, Queues and Job Definitions are available?
@@ -151,7 +153,7 @@ Container to the give users the ability to move data in and out of the
 Container for processing.  The awscli can also be installed to the Container
 itself from Docker Image and Dockerfile.
 
-Also notice, containers without an entry point must be configured 
+Also notice, containers without an entry point must be configured
 `"command": [ "true"  ]`.
 
 ### What does this error mean?
@@ -161,7 +163,7 @@ Process `...` terminated for an unknown reason -- Likely it has been terminated 
 ```
 
 This error indicates a problem with the Job Definition configuration or the
-location of the awscli tool.  
+location of the awscli tool.
 
 Also see: https://www.nextflow.io/docs/latest/awscloud.html#troubleshooting
 
@@ -203,3 +205,26 @@ For information on additional, useful options:
 ```
 aws s3 rm help
 ```
+
+## Pipeline development
+
+### How do I force local execution of a task without Docker?
+
+Include ``container null`` within the process definition.
+
+### How can I test and develop individual steps of the pipeline?
+
+This pipeline was designed to minimize the logic and inline code in
+Nextflow. Invocations of the ``dada2`` package are make via scripts in
+``bin/``. One pattern for testing and development is to execute an
+individual script in the docker environment using files produced by
+local execution of the pipeline. For example:
+
+```
+docker run --rm -it -v $(pwd):$(pwd) -w $(pwd) \
+	quay.io/nhoffman/dada2-nf:v1.12-9-g39fa45b bin/dada2_learn_errors.R \
+	output/batch_1/filtered --model errors.rds
+```
+
+This makes it possible to iteratively develop the scripts, add print
+statements, examine output, etc, outside the context of the pipeline.
