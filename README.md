@@ -16,6 +16,8 @@ Using the minimal config settings below run the pipeline
 ./nextflow run main.nf
 ```
 
+The default profile results in local execution.
+
 ## Execution on AWS Batch
 
 A configuration file for AWS Batch execution will look something like this:
@@ -53,7 +55,3 @@ profiles{
 
 TODO: some high-level guidance on how to learn how to set up Batch.
 
-## Development tips
-
-- force local execution without docker for a specific task by
-  including ``container null`` within the process definition
