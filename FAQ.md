@@ -29,66 +29,6 @@ STARTING
 hello world
 SUCCEEDED
 ```
-
-### How do I understand resource allocation?
-
-Resource allocation defines which EC2/SPOT instance will be chosen to run your
-Job request. Resource allocation can be defined at any point in the Batch
-process with the Batch Job having the final word on how much compute resources
-it needs to execute properly.  EC2 instances come in a variety of CPU and RAM
-combinations:
-
-https://aws.amazon.com/ec2/instance-types/
-
-The Compute Environment, by default, will choose an EC2 instances
-that meets the minimum resource requirements based on availability in a region,
-pricing and EC2 start up time to satisfy the requirements defined in a Job or
-Job Definition.  The minimum requirements for any Batch Job are 1 cpu and 
-4 MiB of RAM.
-
-### How can I tell which EC2 instance type was allocated for my Job?
-
-The EC2 instance can be determined using the AWS Instance Metadata Service by
-executing the following using wget (or curl) as part of the Job request:
-
-```
-aws_batch --job-queue optimal --command "wget -O - -q http://169.254.169.254/latest/meta-data/instance-type" ubuntu-18-04
-c4.2xlarge
-```
-
-For more information on using the Instance Metadata Service see
-
-https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html
-
-### Can I view other Job requests being executed on a container instance?
-
-You can view all Job tasks currently being executed within an EC2 Instance
-using AWS ECS Container Agent Introspection by running wget (or curl) on
-port 51678 from localhost:
-
-```
-wget -O - -q http://localhost:51678/v1/tasks"
-```
-
-For more information on using ECS Container Agent Introspection:
-
-https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-introspection.html
-
-### Specifying job resources
-
-If a Job is expected to exceed the resource requirements defined in a Job
-Definition the Job can override the Job Definition.
-Defining a higher number of CPUs and more memory will also be
-mapped to the Docker run arguments `--cpu-shares` and `--memory`:
-
-https://docs.docker.com/config/containers/resource_constraints/
-
-Keep in mind `--cpu-shares` will not prevent Docker containers from utilizing
-every CPU available in an EC2 instance but `--memory` *will* prevent a Docker
-container from utilizing more than the requested amount.  Think of CPU
-allocation as a floor requirment and the RAM requirement as a ceiling
-requirement.
-
 ### What Compute Environments, Queues and Job Definitions are available?
 
 Using the awscli (pip install awscli):
@@ -109,6 +49,22 @@ aws batch help
 ```
 
 Note: many of the commands are only available to AWS admins
+
+### How do I understand resource allocation?
+
+Resource allocation defines which EC2/SPOT instance will be chosen to run your
+Job request. Resource allocation can be defined at any point in the Batch
+process with the Batch Job having the final word on how much compute resources
+it needs to execute properly.  EC2 instances come in a variety of CPU and RAM
+combinations:
+
+https://aws.amazon.com/ec2/instance-types/
+
+The Compute Environment, by default, will choose an EC2 instances
+that meets the minimum resource requirements based on availability in a region,
+pricing and EC2 start up time to satisfy the requirements defined in a Job or
+Job Definition.  The minimum requirements for any Batch Job are 1 cpu and 
+4 MiB of RAM.
 
 ### How do I create my own Job Definitions?
 
@@ -157,16 +113,48 @@ itself from Docker Image and Dockerfile.
 Also note: Containers without an entry point must be configured
 `"command": [ "true"  ].
 
-### What does this Nextflow error mean?
+### Specifying job resources
+
+If a Job is expected to exceed the resource requirements defined in a Job
+Definition the Job can override the Job Definition.
+Defining a higher number of CPUs and more memory will also be
+mapped to the Docker run arguments `--cpu-shares` and `--memory`:
+
+https://docs.docker.com/config/containers/resource_constraints/
+
+Keep in mind `--cpu-shares` will not prevent Docker containers from utilizing
+every CPU available in an EC2 instance but `--memory` *will* prevent a Docker
+container from utilizing more than the requested amount.  Think of CPU
+allocation as a floor requirment and the RAM requirement as a ceiling
+requirement.
+
+### How can I tell which EC2 instance type was allocated for my Job?
+
+The EC2 instance can be determined using the AWS Instance Metadata Service by
+executing the following using wget (or curl) as part of the Job request:
 
 ```
-Process `...` terminated for an unknown reason -- Likely it has been terminated by the external system
+aws_batch --job-queue optimal --command "wget -O - -q http://169.254.169.254/latest/meta-data/instance-type" ubuntu-18-04
+c4.2xlarge
 ```
 
-This error indicates a problem with the Job Definition configuration or the
-location of the awscli tool.
+For more information on using the Instance Metadata Service see
 
-Also see: https://www.nextflow.io/docs/latest/awscloud.html#troubleshooting
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html
+
+### Can I view other Job requests being executed on a container instance?
+
+You can view all Job tasks currently being executed within an EC2 Instance
+using AWS ECS Container Agent Introspection by running wget (or curl) on
+port 51678 from localhost:
+
+```
+wget -O - -q http://localhost:51678/v1/tasks"
+```
+
+For more information on using ECS Container Agent Introspection:
+
+https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-introspection.html
 
 ### How can I test my aws credentials?
 
@@ -229,3 +217,16 @@ docker run --rm -it -v $(pwd):$(pwd) -w $(pwd) \
 
 This makes it possible to iteratively develop the scripts, add print
 statements, examine output, etc, outside the context of the pipeline.
+
+### What does this Nextflow error mean?
+
+```
+Process `...` terminated for an unknown reason -- Likely it has been terminated by the external system
+```
+
+This error indicates a problem with the Job Definition configuration or the
+location of the awscli tool.
+
+Also see: https://www.nextflow.io/docs/latest/awscloud.html#troubleshooting
+
+
