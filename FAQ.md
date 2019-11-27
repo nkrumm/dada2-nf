@@ -21,14 +21,16 @@ https://github.com/crosenth/aws_batch
 A simple Batch request (with some verbosity) looks like this:
 
 ```
-aws_batch -v --job-queue optimal --command 'echo hello world' ubuntu-18-04
+aws_batch -v --job-queue optimal --command 'echo hello world; echo and goodbye!' ubuntu-18-04
 mkdir -p tmp; cd tmp; echo hello world
-ubuntu-18-04 "echo hello world"
+ubuntu-18-04 "echo hello world; echo and goodbye!"
 RUNNABLE
 STARTING
 hello world
+and goodbye!
 SUCCEEDED
 ```
+
 ### What Compute Environments, Queues and Job Definitions are available?
 
 Using the awscli (pip install awscli):
