@@ -22,11 +22,11 @@ process create_manifest {
 // TODO: allow barcodecop to handle empty input and output data
 process barcodecop {
     input:
-    set sampleid, batch, sample_type, I1, I2, R from manifest.splitCsv(header: true)
+    tuple sampleid, batch, sample_type, I1, I2, R from manifest.splitCsv(header: true)
     file("test/fastq/") from fastq
 
     output:
-    set batch, file("${sampleid}_${sample_type}_counts.csv") into barcode_counts
+    tuple batch, file("${sampleid}_${sample_type}_counts.csv") into barcode_counts
     file("${sampleid}_${sample_type}_.fq.gz") into to_filt_trim
     file("${sampleid}_${sample_type}_.fq.gz") into to_plot
 
@@ -44,10 +44,10 @@ process barcodecop {
 process sample_counts {
 
     input:
-    set batch, file("*_counts.csv") from barcode_counts.groupTuple()
+    tuple batch, file("*_counts.csv") from barcode_counts.groupTuple()
 
     output:
-    set batch, file("counts.csv") into counts
+    tuple batch, file("counts.csv") into counts
 
     publishDir "${params.output}/batch_${batch}/", overwrite: true
 
@@ -59,10 +59,10 @@ process sample_counts {
 process fastq_list {
 
     input:
-    set batch, file("counts.csv") from counts.groupTuple()
+    tuple batch, file("counts.csv") from counts.groupTuple()
 
     output:
-    set batch, file("fastq_list.txt") into batch_list
+    tuple batch, file("fastq_list.txt") into batch_list
     file("fastq_list.txt") into fastq_list
     file("samples.csv") into sample_list
 
@@ -76,7 +76,7 @@ process fastq_list {
 // process plot_quality {
 
 //     input:
-//     set batch, sampleid, fwd, rev from sample_list.splitCsv(header: true)
+//     tuple batch, sampleid, fwd, rev from sample_list.splitCsv(header: true)
 //     file("") from to_plot.collect()
 
 //     output:
@@ -93,11 +93,11 @@ process fastq_list {
 process filter_and_trim {
 
     input:
-    set batch, file("fastq_list.txt") from batch_list.filter{r -> !file(r[1]).isEmpty()}
+    tuple batch, file("fastq_list.txt") from batch_list.filter{r -> !file(r[1]).isEmpty()}
     file("") from to_filt_trim.collect()
 
     output:
-    set batch, file("*_filt.fastq.gz") into filtered
+    tuple batch, file("*_filt.fastq.gz") into filtered
 
     publishDir "${params.output}/batch_${batch}/filtered/", overwrite: true
 
@@ -109,10 +109,10 @@ process filter_and_trim {
 process dereplicate {
 
     input:
-    set batch, file("") from filtered
+    tuple batch, file("") from filtered
 
     output:
-    set batch, file("dada2.rda") into rda
+    tuple batch, file("dada2.rda") into rda
     file("seqtab_nochim.rda") into seqtab_nochim
 
     publishDir "${params.output}/batch_${batch}/", overwrite: true
@@ -125,7 +125,7 @@ process dereplicate {
 process overlaps {
 
     input:
-    set batch, file("dada2.rda") from rda
+    tuple batch, file("dada2.rda") from rda
 
     output:
     file("overlaps.csv") into overlaps
