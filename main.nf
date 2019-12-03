@@ -106,115 +106,173 @@ process filter_and_trim {
     """
 }
 
-process dereplicate {
+// clone channel so that it can be consumed twice
+filtered.into { filtered_learn_errors; filtered_dada }
+
+process learn_errors {
 
     input:
-    tuple batch, file("") from filtered
+    tuple batch, file("") from filtered_learn_errors
 
     output:
-    tuple batch, file("dada2.rda") into rda
-    file("seqtab_nochim.rda") into seqtab_nochim
+    tuple batch, file("error_model.rds") into error_model
+    file("error_model.png") into error_model_plots
 
     publishDir "${params.output}/batch_${batch}/", overwrite: true
 
     """
-    dada2_dereplicate.R . --rdata dada2.rda --seqtab-nochim seqtab_nochim.rda --max-mismatch 1
+    dada2_learn_errors.R . --model error_model.rds --plots error_model.png --nthreads 10
     """
 }
 
-process overlaps {
+// prepare input for dada_dereplicate
+// returns channel of [batch, model, sampleid, R1, R2]
+// https://www.nextflow.io/docs/latest/operator.html
+error_model
+    .join(filtered_dada)
+    .map { x -> [x[0], x[1], x[2].collate(2)] }
+    .transpose()
+    .map { y -> y.flatten() }
+    .map { z -> [z[0], z[1], file(z[2]).baseName.replaceFirst(/_R1_filt.*/, ""), z[2], z[3]] }
+    .set { dada_input }
+
+// dada_input.println { "Received: $it" }
+
+process dada_dereplicate {
 
     input:
-    tuple batch, file("dada2.rda") from rda
+	tuple batch, file("model.rds"), sampleid, file("R1.fastq.gz"), file("R2.fastq.gz") from dada_input
 
     output:
-    file("overlaps.csv") into overlaps
+	file("dada.rds") into dada_data
+    file("seqtab.rds") into dada_seqtab
+    file("counts.csv") into dada_counts
+    file("overlaps.csv") into dada_overlaps
 
-    publishDir "${params.output}/batch_${batch}/", overwrite: true
+    publishDir "${params.output}/${sampleid}/", overwrite: true
 
     """
-    dada2_overlaps.R dada2.rda --batch ${batch} -o overlaps.csv
+    dada2_dada.R R1.fastq.gz R2.fastq.gz --errors model.rds \
+--sampleid ${sampleid} \
+--self-consist FALSE \
+--data dada.rds \
+--seqtab seqtab.rds \
+--counts counts.csv \
+--overlaps overlaps.csv
     """
 }
 
-process list_all_files {
+// foo.println { "Received: $it" }
 
-    input:
-    file("fastq_list_*.txt") from fastq_list.collect()
+// process dereplicate {
 
-    output:
-    file("fastq_list.txt")
+//     input:
+//     tuple batch, file("") from filtered
 
-    publishDir params.output, overwrite: true
+//     output:
+//     tuple batch, file("dada2.rda") into rda
+//     file("seqtab_nochim.rda") into seqtab_nochim
 
-    """
-    cat fastq_list_*.txt > fastq_list.txt
-    """
-}
+//     publishDir "${params.output}/batch_${batch}/", overwrite: true
 
-process combined_overlaps {
+//     """
+//     dada2_dereplicate.R . --rdata dada2.rda --seqtab-nochim seqtab_nochim.rda --max-mismatch 1
+//     """
+// }
 
-    input:
-    file("overlaps_*.csv") from overlaps.collect()
+// process overlaps {
 
-    output:
-    file("overlaps.csv")
+//     input:
+//     tuple batch, file("dada2.rda") from rda
 
-    publishDir params.output, overwrite: true
+//     output:
+//     file("overlaps.csv") into overlaps
 
-    """
-    csvcat.sh overlaps_*.csv > overlaps.csv
-    """
-}
+//     publishDir "${params.output}/batch_${batch}/", overwrite: true
 
-process write_seqs {
+//     """
+//     dada2_overlaps.R dada2.rda --batch ${batch} -o overlaps.csv
+//     """
+// }
 
-    input:
-    file("seqtab_nochim_*.rda") from seqtab_nochim.collect()
+// process list_all_files {
 
-    output:
-    file("seqs.fasta") into seqs
-    file("specimen_map.csv")
-    file("dada2_sv_table.csv")
-    file("dada2_sv_table_long.csv")
-    file("weights.csv")
+//     input:
+//     file("fastq_list_*.txt") from fastq_list.collect()
 
-    publishDir params.output, overwrite: true
+//     output:
+//     file("fastq_list.txt")
 
-    """
-    dada2_write_seqs.R seqtab_nochim_*.rda --seqs seqs.fasta --specimen-map specimen_map.csv --sv-table dada2_sv_table.csv --sv-table-long dada2_sv_table_long.csv --weights weights.csv
-    """
-}
+//     publishDir params.output, overwrite: true
 
-process cmalign {
+//     """
+//     cat fastq_list_*.txt > fastq_list.txt
+//     """
+// }
 
-    input:
-    file("seqs.fasta") from seqs
-    file('ssu-align-0.1.1-bacteria-0p1.cm') from file("data/ssu-align-0.1.1-bacteria-0p1.cm")
+// process combined_overlaps {
 
-    output:
-    file("seqs.sto")
-    file("sv_aln_scores.txt") into seqs_scores
+//     input:
+//     file("overlaps_*.csv") from overlaps.collect()
 
-    publishDir params.output, overwrite: true
+//     output:
+//     file("overlaps.csv")
 
-    """
-    cmalign --cpu 10 --dnaout --noprob -o seqs.sto --sfile sv_aln_scores.txt ssu-align-0.1.1-bacteria-0p1.cm seqs.fasta
-    """
-}
+//     publishDir params.output, overwrite: true
 
-process not_16s {
+//     """
+//     csvcat.sh overlaps_*.csv > overlaps.csv
+//     """
+// }
 
-    input:
-    file("sv_aln_scores.txt") from seqs_scores
+// process write_seqs {
 
-    output:
-    file("not_16s.txt")
+//     input:
+//     file("seqtab_nochim_*.rda") from seqtab_nochim.collect()
 
-    publishDir params.output, overwrite: true
+//     output:
+//     file("seqs.fasta") into seqs
+//     file("specimen_map.csv")
+//     file("dada2_sv_table.csv")
+//     file("dada2_sv_table_long.csv")
+//     file("weights.csv")
 
-    """
-    read_cmscores.py --min-bit-score 0 -o not_16s.txt sv_aln_scores.txt
-    """
-}
+//     publishDir params.output, overwrite: true
+
+//     """
+//     dada2_write_seqs.R seqtab_nochim_*.rda --seqs seqs.fasta --specimen-map specimen_map.csv --sv-table dada2_sv_table.csv --sv-table-long dada2_sv_table_long.csv --weights weights.csv
+//     """
+// }
+
+// process cmalign {
+
+//     input:
+//     file("seqs.fasta") from seqs
+//     file('ssu-align-0.1.1-bacteria-0p1.cm') from file("data/ssu-align-0.1.1-bacteria-0p1.cm")
+
+//     output:
+//     file("seqs.sto")
+//     file("sv_aln_scores.txt") into seqs_scores
+
+//     publishDir params.output, overwrite: true
+
+//     """
+//     cmalign --cpu 10 --dnaout --noprob -o seqs.sto --sfile sv_aln_scores.txt ssu-align-0.1.1-bacteria-0p1.cm seqs.fasta
+//     """
+// }
+
+// process not_16s {
+
+//     input:
+//     file("sv_aln_scores.txt") from seqs_scores
+
+//     output:
+//     file("not_16s.txt")
+
+//     publishDir params.output, overwrite: true
+
+//     """
+//     read_cmscores.py --min-bit-score 0 -o not_16s.txt sv_aln_scores.txt
+//     """
+// }
 
