@@ -69,7 +69,11 @@ process fastq_list {
     publishDir "${params.output}/batch_${batch}/", overwrite: true
 
     """
-    fastq_list.py --min-reads 1 --outfile fastq_list.txt --sample-list samples.csv counts.csv ${batch}
+    fastq_list.py \
+	counts.csv ${batch} \
+	--min-reads 1 \
+	--outfile fastq_list.txt \
+	--sample-list samples.csv
     """
 }
 
@@ -102,7 +106,12 @@ process filter_and_trim {
     publishDir "${params.output}/batch_${batch}/filtered/", overwrite: true
 
     """
-    dada2_filter_and_trim.R fastq_list.txt --trim-left 15 --f-trunc 280 --r-trunc 250 --truncq 2 --filt-path .
+    dada2_filter_and_trim.R fastq_list.txt \
+	--filt-path . \
+	--trim-left 15 \
+	--f-trunc 280 \
+	--r-trunc 250 \
+	--truncq 2
     """
 }
 
@@ -135,8 +144,6 @@ error_model
     .map { y -> y.flatten() }
     .map { z -> [z[0], z[1], file(z[2]).baseName.replaceFirst(/_R1_filt.*/, ""), z[2], z[3]] }
     .set { dada_input }
-
-// dada_input.println { "Received: $it" }
 
 process dada_dereplicate {
 
@@ -182,21 +189,6 @@ process dada_dereplicate {
 //     """
 // }
 
-// process overlaps {
-
-//     input:
-//     tuple batch, file("dada2.rda") from rda
-
-//     output:
-//     file("overlaps.csv") into overlaps
-
-//     publishDir "${params.output}/batch_${batch}/", overwrite: true
-
-//     """
-//     dada2_overlaps.R dada2.rda --batch ${batch} -o overlaps.csv
-//     """
-// }
-
 // process list_all_files {
 
 //     input:
@@ -227,54 +219,69 @@ process dada_dereplicate {
 //     """
 // }
 
-// process write_seqs {
+process write_seqs {
 
-//     input:
-//     file("seqtab_nochim_*.rda") from seqtab_nochim.collect()
+    input:
+    file("seqtab_*.csv") from dada_seqtab.collect()
 
-//     output:
-//     file("seqs.fasta") into seqs
-//     file("specimen_map.csv")
-//     file("dada2_sv_table.csv")
-//     file("dada2_sv_table_long.csv")
-//     file("weights.csv")
+    output:
+    file("seqs.fasta") into seqs
+    file("specimen_map.csv")
+    file("dada2_sv_table.csv")
+    file("dada2_sv_table_long.csv")
+    file("weights.csv")
 
-//     publishDir params.output, overwrite: true
+    publishDir params.output, overwrite: true
 
-//     """
-//     dada2_write_seqs.R seqtab_nochim_*.rda --seqs seqs.fasta --specimen-map specimen_map.csv --sv-table dada2_sv_table.csv --sv-table-long dada2_sv_table_long.csv --weights weights.csv
-//     """
-// }
+    """
+    write_seqs.py seqtab_*.csv \
+	--seqs seqs.fasta \
+	--specimen-map specimen_map.csv \
+	--sv-table dada2_sv_table.csv \
+	--sv-table-long dada2_sv_table_long.csv \
+	--weights weights.csv
+    """
+}
 
-// process cmalign {
+// clone channel so that it can be consumed twice
+seqs.into { seqs_to_align; seqs_to_filter }
 
-//     input:
-//     file("seqs.fasta") from seqs
-//     file('ssu-align-0.1.1-bacteria-0p1.cm') from file("data/ssu-align-0.1.1-bacteria-0p1.cm")
+process cmalign {
 
-//     output:
-//     file("seqs.sto")
-//     file("sv_aln_scores.txt") into seqs_scores
+    input:
+    file("seqs.fasta") from seqs_to_align
+    file('ssu-align-0.1.1-bacteria-0p1.cm') from file("data/ssu-align-0.1.1-bacteria-0p1.cm")
 
-//     publishDir params.output, overwrite: true
+    output:
+    file("seqs.sto")
+    file("sv_aln_scores.txt") into aln_scores
 
-//     """
-//     cmalign --cpu 10 --dnaout --noprob -o seqs.sto --sfile sv_aln_scores.txt ssu-align-0.1.1-bacteria-0p1.cm seqs.fasta
-//     """
-// }
+    publishDir params.output, overwrite: true
 
-// process not_16s {
+    """
+    cmalign \
+	--cpu 10 --dnaout --noprob \
+	-o seqs.sto \
+	--sfile sv_aln_scores.txt ssu-align-0.1.1-bacteria-0p1.cm seqs.fasta
+    """
+}
 
-//     input:
-//     file("sv_aln_scores.txt") from seqs_scores
+process filter_16s {
 
-//     output:
-//     file("not_16s.txt")
+    input:
+	file("seqs.fasta") from seqs_to_filter
+    file("sv_aln_scores.txt") from aln_scores
 
-//     publishDir params.output, overwrite: true
+    output:
+	file("16s.fasta")
+        file("not16s.fasta")
 
-//     """
-//     read_cmscores.py --min-bit-score 0 -o not_16s.txt sv_aln_scores.txt
-//     """
-// }
+    publishDir params.output, overwrite: true
 
+    """
+    filter_16s.py seqs.fasta sv_aln_scores.txt \
+	--min-bit-score 0 \
+	--passing 16s.fasta \
+	--failing not16s.fasta
+    """
+}
