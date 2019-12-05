@@ -171,21 +171,6 @@ process dada_dereplicate {
     """
 }
 
-// process list_all_files {
-
-//     input:
-//     file("fastq_list_*.txt") from fastq_list.collect()
-
-//     output:
-//     file("fastq_list.txt")
-
-//     publishDir params.output, overwrite: true
-
-//     """
-//     cat fastq_list_*.txt > fastq_list.txt
-//     """
-// }
-
 process combined_overlaps {
 
     input:
