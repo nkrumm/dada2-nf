@@ -16,22 +16,26 @@ def main(arguments):
     parser.add_argument('sample_counts',
                         help="headerless sample counts in csv format",
                         type=argparse.FileType('r'))
-    parser.add_argument('batch', help='batch number')
+    parser.add_argument('batch', help='batch label')
     parser.add_argument('--min-reads', default=0,
                         help='minimum read count', type=int)
     parser.add_argument('--sample-list',
-                        help='header batch,sampleid,R1,R2 csv file',
+                        help='csv file with headers batch,sampleid,R1,R2',
                         type=argparse.FileType('w'))
     parser.add_argument('-o', '--outfile',
                         default=sys.stdout, help="Filtered manifest file",
                         type=argparse.FileType('w'))
+
     args = parser.parse_args(arguments)
-    fieldnames = ['path', 'input_count', 'output_count']
-    counts = csv.DictReader(args.sample_counts, fieldnames=fieldnames)
+
+    counts = csv.DictReader(
+        args.sample_counts, fieldnames=['path', 'input_count', 'output_count'])
     counts = (c for c in counts if int(c['output_count']) >= args.min_reads)
     samples = sorted(c['path'] for c in counts)  # must be sorted for Rscripts
+
     for s in samples:
         args.outfile.write(s + '\n')
+
     sample_list = []
     if args.sample_list:
         for path in samples:
@@ -44,6 +48,7 @@ def main(arguments):
                 'sampleid': sampleid,
                 'sample_type': sample_type,
                 })
+
         key = operator.itemgetter('sampleid', 'sample_type')
         sample_list = sorted(sample_list, key=key)
         fieldnames = ['batch', 'sampleid', 'R1', 'R2']
