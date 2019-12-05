@@ -10,16 +10,22 @@ import os
 import sys
 import argparse
 
+from fastalite import fastalite
+
 
 def main(arguments):
 
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('infile', help="output of cmalign --sfile",
+    parser.add_argument('seqs', help="input sequences",
                         type=argparse.FileType('r'))
-    parser.add_argument('-o', '--outfile', help="Output file",
-                        default=sys.stdout, type=argparse.FileType('w'))
+    parser.add_argument('cmscores', help="output of cmalign --sfile",
+                        type=argparse.FileType('r'))
+    parser.add_argument('--passing', help="fasta of passing sequences",
+                        type=argparse.FileType('w'))
+    parser.add_argument('--failing', help="fasta of failing sequences",
+                        type=argparse.FileType('w'))
     parser.add_argument('--min-bit-score', type=int, default=0,
                         help='minimum bit score [default %(default)s]')
 
@@ -29,12 +35,18 @@ def main(arguments):
                 'trunc', 'bit_sc', 'avg_pp', 'band_calc', 'alignment',
                 'total', 'mem']
 
+    seqdict = {seq.id: seq for seq in fastalite(args.seqs)}
+
     lines = [dict(zip(colnames, line.split()))
-             for line in args.infile if not line.startswith('#')]
+             for line in args.cmscores if not line.startswith('#')]
 
     for line in lines:
-        if float(line['bit_sc']) < args.min_bit_score:
-            args.outfile.write('{seq_name}\n'.format(**line))
+        seq = seqdict[line['seq_name']]
+        output = '>{seq.id}\n{seq.seq}\n'.format(seq=seq)
+        if float(line['bit_sc']) > args.min_bit_score:
+            args.passing.write(output)
+        else:
+            args.fail.write(output)
 
 
 if __name__ == '__main__':
