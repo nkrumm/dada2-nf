@@ -148,7 +148,12 @@ error_model
 process dada_dereplicate {
 
     input:
-	tuple batch, file("model.rds"), sampleid, file("R1.fastq.gz"), file("R2.fastq.gz") from dada_input
+	tuple
+    batch,
+    file("model.rds"),
+    sampleid,
+    file("R1.fastq.gz"),
+    file("R2.fastq.gz") from dada_input
 
     output:
 	file("dada.rds") into dada_data
