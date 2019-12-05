@@ -145,20 +145,22 @@ process dada_dereplicate {
 
     output:
 	file("dada.rds") into dada_data
-    file("seqtab.rds") into dada_seqtab
+    file("seqtab.csv") into dada_seqtab
     file("counts.csv") into dada_counts
     file("overlaps.csv") into dada_overlaps
 
     publishDir "${params.output}/${sampleid}/", overwrite: true
 
+    // TODO: set --self-consist to TRUE in production
+
     """
     dada2_dada.R R1.fastq.gz R2.fastq.gz --errors model.rds \
---sampleid ${sampleid} \
---self-consist FALSE \
---data dada.rds \
---seqtab seqtab.rds \
---counts counts.csv \
---overlaps overlaps.csv
+	--sampleid ${sampleid} \
+	--self-consist FALSE \
+	--data dada.rds \
+	--seqtab seqtab.csv \
+	--counts counts.csv \
+	--overlaps overlaps.csv
     """
 }
 

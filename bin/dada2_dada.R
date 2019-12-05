@@ -27,8 +27,8 @@ main <- function(arguments){
   ## outputs
   parser$add_argument('--data', default='dada.rds',
                       help="output .rds file containing intermediate data structures")
-  parser$add_argument('--seqtab', default='seqtab.rds',
-                      help="output .rds containing chimera-checked seqtab")
+  parser$add_argument('--seqtab', default='seqtab.csv',
+                      help="output file containing chimera-checked SVs")
   parser$add_argument('--counts', default='counts.csv',
                       help="input and output read counts")
   parser$add_argument('--overlaps', default='overlaps.csv',
@@ -102,7 +102,14 @@ main <- function(arguments){
     seqtab.nochim <- dada2::removeBimeraDenovo(seqtab, multithread=multithread, verbose=TRUE)
     rownames(seqtab.nochim) <- args$sampleid
 
-    saveRDS(seqtab.nochim, file=args$seqtab)
+    write.table(
+        data.frame(sampleid=args$sampleid,
+                   count=as.integer(seqtab.nochim),
+                   seq=colnames(seqtab.nochim)),
+        file=args$seqtab,
+        sep=",", quote=FALSE, col.names=FALSE, row.names=FALSE)
+
+    ## saveRDS(seqtab.nochim, file=args$seqtab)
     saveRDS(list(sampleid=args$sampleid, f=f, r=r, merged=merged,
                  seqtab=seqtab, seqtab.nochim=seqtab.nochim),
             file=args$data)
@@ -126,7 +133,9 @@ main <- function(arguments){
   }else{
     cat(gettextf('Warning: no merged reads in sample %s\n', args$sampleid))
 
-    saveRDS(NULL, file=args$seqtab)
+    ## saveRDS(NULL, file=args$seqtab)
+    file.create(args$seqtab)  ## an empty file
+
     saveRDS(list(sampleid=args$sampleid, f=f, r=r, merged=NULL,
                  seqtab=NULL, seqtab.nochim=NULL),
             file=args$data)
