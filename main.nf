@@ -171,24 +171,6 @@ process dada_dereplicate {
     """
 }
 
-// foo.println { "Received: $it" }
-
-// process dereplicate {
-
-//     input:
-//     tuple batch, file("") from filtered
-
-//     output:
-//     tuple batch, file("dada2.rda") into rda
-//     file("seqtab_nochim.rda") into seqtab_nochim
-
-//     publishDir "${params.output}/batch_${batch}/", overwrite: true
-
-//     """
-//     dada2_dereplicate.R . --rdata dada2.rda --seqtab-nochim seqtab_nochim.rda --max-mismatch 1
-//     """
-// }
-
 // process list_all_files {
 
 //     input:
@@ -204,20 +186,20 @@ process dada_dereplicate {
 //     """
 // }
 
-// process combined_overlaps {
+process combined_overlaps {
 
-//     input:
-//     file("overlaps_*.csv") from overlaps.collect()
+    input:
+    file("overlaps_*.csv") from dada_overlaps.collect()
 
-//     output:
-//     file("overlaps.csv")
+    output:
+    file("overlaps.csv")
 
-//     publishDir params.output, overwrite: true
+    publishDir params.output, overwrite: true
 
-//     """
-//     csvcat.sh overlaps_*.csv > overlaps.csv
-//     """
-// }
+    """
+    csvcat.sh overlaps_*.csv > overlaps.csv
+    """
+}
 
 process write_seqs {
 
