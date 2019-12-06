@@ -130,26 +130,33 @@ to_learn_errors = batches
     .cross(filtered_trimmed)
     .map{ it -> [it[0]['batch'], it[1][1], it[1][2]] }
     .groupTuple()
-    // .println { "Received: $it" }
+    //.println { "Received: $it" }
 
 // // clone channel so that it can be consumed twice
 // filtered.into { filtered_learn_errors; filtered_dada }
 
-// process learn_errors {
+process learn_errors {
 
-//     input:
-//     tuple batch, file("") from filtered_learn_errors
+    input:
+	tuple batch, R1s, R2s from to_learn_errors
 
-//     output:
-//     tuple batch, file("error_model.rds") into error_model
-//     file("error_model.png") into error_model_plots
+    output:
+    tuple batch, file("error_model_${batch}.rds") into error_model
+    file("error_model_${batch}.png") into error_model_plots
 
-//     publishDir "${params.output}/batch_${batch}/", overwrite: true
+    publishDir "${params.output}", overwrite: true
 
-//     """
-//     dada2_learn_errors.R . --model error_model.rds --plots error_model.png --nthreads 10
-//     """
-// }
+    // https://github.com/nextflow-io/nextflow/issues/774
+
+    """
+    echo "${R1s.join('\n')}" > R1.txt
+    echo "${R2s.join('\n')}" > R2.txt
+    dada2_learn_errors.R --r1 R1.txt --r2 R2.txt \
+        --model error_model_${batch}.rds \
+        --plots error_model_${batch}.png \
+        --nthreads 10
+    """
+}
 
 // // prepare input for dada_dereplicate
 // // returns channel of [batch, model, sampleid, R1, R2]
