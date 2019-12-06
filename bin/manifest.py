@@ -116,7 +116,7 @@ def main(arguments):
     # finally, write an output file with columns (sampleid, batch)
     writer = csv.DictWriter(
         args.outfile, fieldnames=['sampleid', 'batch'], extrasaction='ignore')
-    writer.writeheader()
+    # writer.writeheader()
     writer.writerows(manifest)
 
 
