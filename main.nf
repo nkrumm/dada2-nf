@@ -1,81 +1,90 @@
-fastq = Channel.fromPath("test/fastq/*").collect()
-sample_info = Channel.fromPath("test/sample-information.csv")
+// fastq = Channel.fromPath("test/fastq/*").collect()
 
-process create_manifest {
+// Channel.fromPath("test/fastq-list.txt")
+//     .splitText()
+//     .map { file(it) }
+//     .into { fastq_files }
+
+// TODO: command line parameters for these inputs with these defaults in the config file
+sample_information = "test/sample-information.csv"
+fastq_list = "test/fastq-list.txt"
+
+sample_info = Channel.fromPath(sample_information)
+fastq_files = Channel.fromPath(fastq_list)
+    .splitText()
+    .map { it - ~/\s+/ }  // strip whitespace
+    .map { file(it) }
+    .map { it -> [(it.fileName =~ /(^[-a-zA-Z0-9]+)/)[0][0], it ] }
+    .groupTuple()
+    .map { it -> it.flatten() }
+fastq_files2 = Channel.fromPath(fastq_list)
+
+// fastq_files.println { "Received: $it" }
+
+process read_manifest {
 
     // container null
 
     input:
-    file("test/sample-information.csv") from sample_info
-    file("test/fastq/") from fastq
+    file("sample-information.csv") from sample_info
+    file("fastq-files.txt") from fastq_files2
 
     output:
-    file("manifest.csv") into manifest
+    file("batches.csv") into batches
 
     publishDir params.output, overwrite: true
 
     """
-    manifest.py --outfile manifest.csv test/sample-information.csv test/fastq/
+    manifest.py --outfile batches.csv sample-information.csv fastq-files.txt
     """
 }
 
-// TODO: allow barcodecop to handle empty input and output data
 process barcodecop {
     input:
-    tuple sampleid, batch, sample_type, I1, I2, R from manifest.splitCsv(header: true)
-    file("test/fastq/") from fastq
+	tuple sampleid, I1, I2, R1, R2 from fastq_files
 
     output:
-    tuple batch, file("${sampleid}_${sample_type}_counts.csv") into barcode_counts
-    file("${sampleid}_${sample_type}_.fq.gz") into to_filt_trim
-    file("${sampleid}_${sample_type}_.fq.gz") into to_plot
+	tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
+        tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
 
-    publishDir "${params.output}/batch_${batch}/fq/", overwrite: true
+    publishDir "${params.output}/barcodecop/", overwrite: true
 
     """
-    barcodecop --fastq ${R} \
-    	       --match-filter \
-	       --outfile ${sampleid}_${sample_type}_.fq.gz \
-	       --read-counts ${sampleid}_${sample_type}_counts.csv \
-	       --quiet ${I1} ${I2}
+    barcodecop --fastq ${R1} ${I1} ${I2} \
+        --outfile ${sampleid}_R1_.fq.gz --read-counts ${sampleid}_R1_counts.csv \
+        --quiet --match-filter
+    barcodecop --fastq ${R2} ${I1} ${I2} \
+        --outfile ${sampleid}_R2_.fq.gz --read-counts ${sampleid}_R2_counts.csv \
+        --quiet --match-filter
     """
 }
 
-process sample_counts {
+process bcop_counts_concat {
 
     input:
-    tuple batch, file("*_counts.csv") from barcode_counts.groupTuple()
+    file("counts*.csv") from bcop_counts.collect()
 
     output:
-    tuple batch, file("counts.csv") into counts
+    file("bcop_counts.csv") into bcop_counts_concat
 
-    publishDir "${params.output}/batch_${batch}/", overwrite: true
+    publishDir "${params.output}", overwrite: true
+
+   // TODO: barcodecop should have --sampleid argument to pass through to counts
 
     """
-    cat *_counts.csv > counts.csv
+    echo "sampleid,raw,barcodecop" > bcop_counts.csv
+    cat counts*.csv | sed 's/_R[12]_.fq.gz//g' | sort | uniq >> bcop_counts.csv
     """
 }
 
-process fastq_list {
+// bcop_filtered.println { "Received: $it" }
 
-    input:
-    tuple batch, file("counts.csv") from counts.groupTuple()
-
-    output:
-    tuple batch, file("fastq_list.txt") into batch_list
-    file("fastq_list.txt") into fastq_list
-    file("samples.csv") into sample_list
-
-    publishDir "${params.output}/batch_${batch}/", overwrite: true
-
-    """
-    fastq_list.py \
-	counts.csv ${batch} \
-	--min-reads 1 \
-	--outfile fastq_list.txt \
-	--sample-list samples.csv
-    """
-}
+// TODO: define a variable min_reads for filtering
+to_filter = bcop_counts_concat
+    .splitCsv(header: true)
+    .filter{ it['barcodecop'].toInteger() > 0 }
+    .cross(bcop_filtered)
+    .map{ it[1] }
 
 // process plot_quality {
 
@@ -93,21 +102,21 @@ process fastq_list {
 //     """
 // }
 
-// TODO: consider handling empty fastqs in dada2_filter_and_trim.R
 process filter_and_trim {
 
     input:
-    tuple batch, file("fastq_list.txt") from batch_list.filter{r -> !file(r[1]).isEmpty()}
-    file("") from to_filt_trim.collect()
+    tuple sampleid, R1, R2 from to_filter
 
     output:
-    tuple batch, file("*_filt.fastq.gz") into filtered
+    tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into filtered_trimmed
 
-    publishDir "${params.output}/batch_${batch}/filtered/", overwrite: true
+    publishDir "${params.output}/filtered/", overwrite: true
 
+    // TODO: variables in config for filter and trim params
     """
-    dada2_filter_and_trim.R fastq_list.txt \
-	--filt-path . \
+    dada2_filter_and_trim.R \
+        --infiles ${R1} ${R2} \
+        --outfiles ${sampleid}_R1_.fq.gz ${sampleid}_R2_.fq.gz \
 	--trim-left 15 \
 	--f-trunc 280 \
 	--r-trunc 250 \
@@ -115,141 +124,149 @@ process filter_and_trim {
     """
 }
 
-// clone channel so that it can be consumed twice
-filtered.into { filtered_learn_errors; filtered_dada }
+// [[batch, [r1...], [r2...]], ...]
+to_learn_errors = batches
+    .splitCsv(header: true)
+    .cross(filtered_trimmed)
+    .map{ it -> [it[0]['batch'], it[1][1], it[1][2]] }
+    .groupTuple()
+    // .println { "Received: $it" }
 
-process learn_errors {
+// // clone channel so that it can be consumed twice
+// filtered.into { filtered_learn_errors; filtered_dada }
 
-    input:
-    tuple batch, file("") from filtered_learn_errors
+// process learn_errors {
 
-    output:
-    tuple batch, file("error_model.rds") into error_model
-    file("error_model.png") into error_model_plots
+//     input:
+//     tuple batch, file("") from filtered_learn_errors
 
-    publishDir "${params.output}/batch_${batch}/", overwrite: true
+//     output:
+//     tuple batch, file("error_model.rds") into error_model
+//     file("error_model.png") into error_model_plots
 
-    """
-    dada2_learn_errors.R . --model error_model.rds --plots error_model.png --nthreads 10
-    """
-}
+//     publishDir "${params.output}/batch_${batch}/", overwrite: true
 
-// prepare input for dada_dereplicate
-// returns channel of [batch, model, sampleid, R1, R2]
-// https://www.nextflow.io/docs/latest/operator.html
-error_model
-    .join(filtered_dada)
-    .map { x -> [x[0], x[1], x[2].collate(2)] }
-    .transpose()
-    .map { y -> y.flatten() }
-    .map { z -> [z[0], z[1], file(z[2]).baseName.replaceFirst(/_R1_filt.*/, ""), z[2], z[3]] }
-    .set { dada_input }
+//     """
+//     dada2_learn_errors.R . --model error_model.rds --plots error_model.png --nthreads 10
+//     """
+// }
 
-process dada_dereplicate {
+// // prepare input for dada_dereplicate
+// // returns channel of [batch, model, sampleid, R1, R2]
+// // https://www.nextflow.io/docs/latest/operator.html
+// error_model
+//     .join(filtered_dada)
+//     .map { x -> [x[0], x[1], x[2].collate(2)] }
+//     .transpose()
+//     .map { y -> y.flatten() }
+//     .map { z -> [z[0], z[1], file(z[2]).baseName.replaceFirst(/_R1_filt.*/, ""), z[2], z[3]] }
+//     .set { dada_input }
 
-    input:
-	tuple batch, file("model.rds"), sampleid, \
-    file("R1.fastq.gz"), file("R2.fastq.gz") from dada_input
+// process dada_dereplicate {
 
-    output:
-	file("dada.rds") into dada_data
-    file("seqtab.csv") into dada_seqtab
-    file("counts.csv") into dada_counts
-    file("overlaps.csv") into dada_overlaps
+//     input:
+// 	tuple batch, file("model.rds"), sampleid, \
+//     file("R1.fastq.gz"), file("R2.fastq.gz") from dada_input
 
-    publishDir "${params.output}/${sampleid}/", overwrite: true
+//     output:
+// 	file("dada.rds") into dada_data
+//     file("seqtab.csv") into dada_seqtab
+//     file("counts.csv") into dada_counts
+//     file("overlaps.csv") into dada_overlaps
 
-    // TODO: set --self-consist to TRUE in production
+//     publishDir "${params.output}/${sampleid}/", overwrite: true
 
-    """
-    dada2_dada.R R1.fastq.gz R2.fastq.gz --errors model.rds \
-	--sampleid ${sampleid} \
-	--self-consist FALSE \
-	--data dada.rds \
-	--seqtab seqtab.csv \
-	--counts counts.csv \
-	--overlaps overlaps.csv
-    """
-}
+//     // TODO: set --self-consist to TRUE in production
 
-process combined_overlaps {
+//     """
+//     dada2_dada.R R1.fastq.gz R2.fastq.gz --errors model.rds \
+// 	--sampleid ${sampleid} \
+// 	--self-consist FALSE \
+// 	--data dada.rds \
+// 	--seqtab seqtab.csv \
+// 	--counts counts.csv \
+// 	--overlaps overlaps.csv
+//     """
+// }
 
-    input:
-    file("overlaps_*.csv") from dada_overlaps.collect()
+// process combined_overlaps {
 
-    output:
-    file("overlaps.csv")
+//     input:
+//     file("overlaps_*.csv") from dada_overlaps.collect()
 
-    publishDir params.output, overwrite: true
+//     output:
+//     file("overlaps.csv")
 
-    """
-    csvcat.sh overlaps_*.csv > overlaps.csv
-    """
-}
+//     publishDir params.output, overwrite: true
 
-process write_seqs {
+//     """
+//     csvcat.sh overlaps_*.csv > overlaps.csv
+//     """
+// }
 
-    input:
-    file("seqtab_*.csv") from dada_seqtab.collect()
+// process write_seqs {
 
-    output:
-    file("seqs.fasta") into seqs
-    file("specimen_map.csv")
-    file("dada2_sv_table.csv")
-    file("dada2_sv_table_long.csv")
-    file("weights.csv")
+//     input:
+//     file("seqtab_*.csv") from dada_seqtab.collect()
 
-    publishDir params.output, overwrite: true
+//     output:
+//     file("seqs.fasta") into seqs
+//     file("specimen_map.csv")
+//     file("dada2_sv_table.csv")
+//     file("dada2_sv_table_long.csv")
+//     file("weights.csv")
 
-    """
-    write_seqs.py seqtab_*.csv \
-	--seqs seqs.fasta \
-	--specimen-map specimen_map.csv \
-	--sv-table dada2_sv_table.csv \
-	--sv-table-long dada2_sv_table_long.csv \
-	--weights weights.csv
-    """
-}
+//     publishDir params.output, overwrite: true
 
-// clone channel so that it can be consumed twice
-seqs.into { seqs_to_align; seqs_to_filter }
+//     """
+//     write_seqs.py seqtab_*.csv \
+// 	--seqs seqs.fasta \
+// 	--specimen-map specimen_map.csv \
+// 	--sv-table dada2_sv_table.csv \
+// 	--sv-table-long dada2_sv_table_long.csv \
+// 	--weights weights.csv
+//     """
+// }
 
-process cmalign {
+// // clone channel so that it can be consumed twice
+// seqs.into { seqs_to_align; seqs_to_filter }
 
-    input:
-    file("seqs.fasta") from seqs_to_align
-    file('ssu-align-0.1.1-bacteria-0p1.cm') from file("data/ssu-align-0.1.1-bacteria-0p1.cm")
+// process cmalign {
 
-    output:
-    file("seqs.sto")
-    file("sv_aln_scores.txt") into aln_scores
+//     input:
+//     file("seqs.fasta") from seqs_to_align
+//     file('ssu-align-0.1.1-bacteria-0p1.cm') from file("data/ssu-align-0.1.1-bacteria-0p1.cm")
 
-    publishDir params.output, overwrite: true
+//     output:
+//     file("seqs.sto")
+//     file("sv_aln_scores.txt") into aln_scores
 
-    """
-    cmalign \
-	--cpu 10 --dnaout --noprob \
-	-o seqs.sto \
-	--sfile sv_aln_scores.txt ssu-align-0.1.1-bacteria-0p1.cm seqs.fasta
-    """
-}
+//     publishDir params.output, overwrite: true
 
-process filter_16s {
+//     """
+//     cmalign \
+// 	--cpu 10 --dnaout --noprob \
+// 	-o seqs.sto \
+// 	--sfile sv_aln_scores.txt ssu-align-0.1.1-bacteria-0p1.cm seqs.fasta
+//     """
+// }
 
-    input:
-	file("seqs.fasta") from seqs_to_filter
-    file("sv_aln_scores.txt") from aln_scores
+// process filter_16s {
 
-    output:
-	file("16s.fasta")
-        file("not16s.fasta")
+//     input:
+// 	file("seqs.fasta") from seqs_to_filter
+//     file("sv_aln_scores.txt") from aln_scores
 
-    publishDir params.output, overwrite: true
+//     output:
+// 	file("16s.fasta")
+//         file("not16s.fasta")
 
-    """
-    filter_16s.py seqs.fasta sv_aln_scores.txt \
-	--min-bit-score 0 \
-	--passing 16s.fasta \
-	--failing not16s.fasta
-    """
-}
+//     publishDir params.output, overwrite: true
+
+//     """
+//     filter_16s.py seqs.fasta sv_aln_scores.txt \
+// 	--min-bit-score 0 \
+// 	--passing 16s.fasta \
+// 	--failing not16s.fasta
+//     """
+// }
