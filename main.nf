@@ -1,30 +1,23 @@
-// fastq = Channel.fromPath("test/fastq/*").collect()
-
-// Channel.fromPath("test/fastq-list.txt")
-//     .splitText()
-//     .map { file(it) }
-//     .into { fastq_files }
-
-// TODO: command line parameters for these inputs with these defaults in the config file
+// TODO: command line parameters for these inputs with these defaults
+// in the config file
 sample_information = "test/sample-information.csv"
 fastq_list = "test/fastq-list.txt"
 
 sample_info = Channel.fromPath(sample_information)
 fastq_files = Channel.fromPath(fastq_list)
     .splitText()
-    .map { file(it.trim()) } // strip whitespace
+    .map { file(it.trim()) }
     .map { [(it.fileName =~ /(^[-a-zA-Z0-9]+)/)[0][0], it ] }
     .groupTuple()
     .map { [ it[0], it[1].sort() ] }
     .map { it.flatten() }
 
-fastq_files2 = Channel.fromPath(fastq_list)
 
 process read_manifest {
 
     input:
 	file("sample-information.csv") from sample_info
-    file("fastq-files.txt") from fastq_files2
+    file("fastq-files.txt") from Channel.fromPath(fastq_list)
 
     output:
 	file("batches.csv") into batches
@@ -40,7 +33,7 @@ process read_manifest {
 process barcodecop {
 
     input:
-	tuple sampleid, I1, I2, R1, R2 from fastq_files
+	tuple sampleid, file(I1), file(I2), file(R1), file(R2) from fastq_files
 
     output:
 	tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
@@ -106,10 +99,10 @@ to_filter = bcop_counts_concat
 process filter_and_trim {
 
     input:
-	tuple sampleid, R1, R2 from to_filter
+	tuple sampleid, file(R1), file(R2) from to_filter
 
     output:
-	tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into filtered_trimmed
+	tuple sampleid, file("${sampleid}_R1_filt.fq.gz"), file("${sampleid}_R2_filt.fq.gz") into filtered_trimmed
 
     publishDir "${params.output}/filtered/", overwrite: true
 
@@ -117,7 +110,7 @@ process filter_and_trim {
     """
     dada2_filter_and_trim.R \
         --infiles ${R1} ${R2} \
-        --outfiles ${sampleid}_R1_.fq.gz ${sampleid}_R2_.fq.gz \
+        --outfiles ${sampleid}_R1_filt.fq.gz ${sampleid}_R2_filt.fq.gz \
 	--trim-left 15 \
 	--f-trunc 280 \
 	--r-trunc 250 \
@@ -160,7 +153,7 @@ process learn_errors {
 process dada_dereplicate {
 
     input:
-	tuple sampleid, batch, R1, R2 from to_dereplicate
+	tuple sampleid, batch, file(R1), file(R2) from to_dereplicate
     file("") from error_models.collect()
 
     output:
