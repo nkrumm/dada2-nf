@@ -199,6 +199,21 @@ process combined_overlaps {
     """
 }
 
+process combined_counts {
+
+    input:
+	file("*.csv") from dada_counts.collect()
+
+    output:
+	file("dada_counts.csv")
+
+    publishDir params.output, overwrite: true
+
+    """
+    csvcat.sh *.csv > dada_counts.csv
+    """
+}
+
 process write_seqs {
 
     input:
