@@ -218,7 +218,7 @@ process write_seqs {
     file("specimen_map.csv")
     file("sv_table.csv")
     file("sv_table_long.csv")
-    file("weights.csv")
+    file("weights.csv") into weights
 
     publishDir params.output, overwrite: true
 
@@ -260,19 +260,22 @@ process filter_16s {
     input:
 	file("seqs.fasta") from seqs_to_filter
     file("sv_aln_scores.txt") from aln_scores
+    file("weights.csv") from weights
 
     output:
 	file("16s.fasta")
     file("not16s.fasta")
-    file("16s-outcomes.csv")
+    file("16s_outcomes.csv")
+    file("16s_counts.csv")
 
     publishDir params.output, overwrite: true
 
     """
-    filter_16s.py seqs.fasta sv_aln_scores.txt \
+    filter_16s.py seqs.fasta sv_aln_scores.txt --weights weights.csv \
 	--min-bit-score 0 \
 	--passing 16s.fasta \
 	--failing not16s.fasta \
-        --outcomes 16s-outcomes.csv
+        --outcomes 16s_outcomes.csv \
+        --counts 16s_counts.csv
     """
 }
