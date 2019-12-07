@@ -23,34 +23,33 @@ fastq_files2 = Channel.fromPath(fastq_list)
 
 process read_manifest {
 
-// container null
+    input:
+	file("sample-information.csv") from sample_info
+    file("fastq-files.txt") from fastq_files2
 
-input:
-    file("sample-information.csv") from sample_info
-file("fastq-files.txt") from fastq_files2
+    output:
+	file("batches.csv") into batches
 
-output:
-    file("batches.csv") into batches
+    publishDir params.output, overwrite: true
 
-publishDir params.output, overwrite: true
-
-"""
+    """
     manifest.py --outfile batches.csv sample-information.csv fastq-files.txt
     """
 }
 
+
 process barcodecop {
 
-input:
-    tuple sampleid, I1, I2, R1, R2 from fastq_files
+    input:
+	tuple sampleid, I1, I2, R1, R2 from fastq_files
 
-output:
-    tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
-tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
+    output:
+	tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
+    tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
 
-publishDir "${params.output}/barcodecop/", overwrite: true
+    publishDir "${params.output}/barcodecop/", overwrite: true
 
-"""
+    """
     barcodecop --fastq ${R1} ${I1} ${I2} \
         --outfile ${sampleid}_R1_.fq.gz --read-counts ${sampleid}_R1_counts.csv \
         --quiet --match-filter
@@ -60,19 +59,20 @@ publishDir "${params.output}/barcodecop/", overwrite: true
     """
 }
 
+
 process bcop_counts_concat {
 
-input:
-    file("counts*.csv") from bcop_counts.collect()
+    input:
+	file("counts*.csv") from bcop_counts.collect()
 
-output:
-    file("bcop_counts.csv") into bcop_counts_concat
+    output:
+	file("bcop_counts.csv") into bcop_counts_concat
 
-publishDir "${params.output}", overwrite: true
+    publishDir "${params.output}", overwrite: true
 
-// TODO: barcodecop should have --sampleid argument to pass through to counts
+    // TODO: barcodecop should have --sampleid argument to pass through to counts
 
-"""
+    """
     echo "sampleid,raw,barcodecop" > bcop_counts.csv
     cat counts*.csv | sed 's/_R[12]_.fq.gz//g' | sort | uniq >> bcop_counts.csv
     """
@@ -102,6 +102,7 @@ to_filter = bcop_counts_concat
 //     dada2_plot_quality.R ${fwd} ${rev} --f-trunc 280 -o qplot_${sampleid}.svg --r-trunc 250 --title \"${sampleid} (batch ${batch})\" --trim-left 15
 //     """
 // }
+
 
 process filter_and_trim {
 
@@ -155,6 +156,7 @@ process learn_errors {
         --nthreads 10
     """
 }
+
 
 process dada_dereplicate {
 
@@ -229,7 +231,7 @@ process cmalign {
 
     input:
 	file("seqs.fasta") from seqs_to_align
-    file('ssu-align-0.1.1-bacteria-0p1.cm') from file("data/ssu-align-0.1.1-bacteria-0p1.cm")
+    file('ssu.cm') from file("data/ssu-align-0.1.1-bacteria-0p1.cm")
 
     output:
 	file("seqs.sto")
@@ -237,11 +239,11 @@ process cmalign {
 
     publishDir params.output, overwrite: true
 
+    // TODO: how to best specify cpu usage by cmalign?
+
     """
-    cmalign \
-	--cpu 10 --dnaout --noprob \
-	-o seqs.sto \
-	--sfile sv_aln_scores.txt ssu-align-0.1.1-bacteria-0p1.cm seqs.fasta
+    cmalign --cpu 10 --dnaout --noprob \
+        -o seqs.sto --sfile sv_aln_scores.txt ssu.cm seqs.fasta
     """
 }
 
