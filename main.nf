@@ -138,6 +138,7 @@ process learn_errors {
     publishDir "${params.output}", overwrite: true
 
     // https://github.com/nextflow-io/nextflow/issues/774
+    // TODO: use file() to stage inputs somehow?
 
     """
     echo "${R1s.join('\n')}" > R1.txt
@@ -263,6 +264,7 @@ process filter_16s {
     output:
 	file("16s.fasta")
     file("not16s.fasta")
+    file("16s-outcomes.csv")
 
     publishDir params.output, overwrite: true
 
@@ -270,6 +272,7 @@ process filter_16s {
     filter_16s.py seqs.fasta sv_aln_scores.txt \
 	--min-bit-score 0 \
 	--passing 16s.fasta \
-	--failing not16s.fasta
+	--failing not16s.fasta \
+        --outcomes 16s-outcomes.csv
     """
 }

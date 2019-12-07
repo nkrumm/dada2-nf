@@ -9,8 +9,16 @@ from __future__ import print_function
 import os
 import sys
 import argparse
+import csv
 
 from fastalite import fastalite
+
+class DevNull:
+    def write(*args, **kwargs):
+        pass
+
+    def writerow(*args, **kwargs):
+        pass
 
 
 def main(arguments):
@@ -26,10 +34,15 @@ def main(arguments):
                         type=argparse.FileType('w'))
     parser.add_argument('--failing', help="fasta of failing sequences",
                         type=argparse.FileType('w'))
+    parser.add_argument('--outcomes', help="csv with seqname,{pass,fail}",
+                        type=argparse.FileType('w'))
     parser.add_argument('--min-bit-score', type=int, default=0,
                         help='minimum bit score [default %(default)s]')
 
     args = parser.parse_args(arguments)
+    passing = args.passing or DevNull()
+    failing = args.failing or DevNull()
+    outcomes = csv.writer(args.outcomes) if args.outcomes else DevNull()
 
     colnames = ['idx', 'seq_name', 'length', 'cm_from', 'cm_to',
                 'trunc', 'bit_sc', 'avg_pp', 'band_calc', 'alignment',
@@ -44,9 +57,11 @@ def main(arguments):
         seq = seqdict[line['seq_name']]
         output = '>{seq.id}\n{seq.seq}\n'.format(seq=seq)
         if float(line['bit_sc']) > args.min_bit_score:
-            args.passing.write(output)
+            passing.write(output)
+            outcomes.writerow([seq.id, 'pass'])
         else:
-            args.fail.write(output)
+            failing.write(output)
+            outcomes.writerow([seq.id, 'fail'])
 
 
 if __name__ == '__main__':
