@@ -12,14 +12,13 @@ fastq_list = "test/fastq-list.txt"
 sample_info = Channel.fromPath(sample_information)
 fastq_files = Channel.fromPath(fastq_list)
     .splitText()
-    .map { it - ~/\s+/ }  // strip whitespace
-    .map { file(it) }
-    .map { it -> [(it.fileName =~ /(^[-a-zA-Z0-9]+)/)[0][0], it ] }
+    .map { file(it.trim()) } // strip whitespace
+    .map { [(it.fileName =~ /(^[-a-zA-Z0-9]+)/)[0][0], it ] }
     .groupTuple()
-    .map { it -> it.flatten() }
-fastq_files2 = Channel.fromPath(fastq_list)
+    .map { [ it[0], it[1].sort() ] }
+    .map { it.flatten() }
 
-// fastq_files.println { "Received: $it" }
+fastq_files2 = Channel.fromPath(fastq_list)
 
 process read_manifest {
 
