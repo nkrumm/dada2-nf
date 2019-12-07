@@ -216,8 +216,8 @@ process write_seqs {
     output:
 	file("seqs.fasta") into seqs
     file("specimen_map.csv")
-    file("dada2_sv_table.csv")
-    file("dada2_sv_table_long.csv")
+    file("sv_table.csv")
+    file("sv_table_long.csv")
     file("weights.csv")
 
     publishDir params.output, overwrite: true
@@ -226,8 +226,8 @@ process write_seqs {
     write_seqs.py seqtab_*.csv \
 	--seqs seqs.fasta \
 	--specimen-map specimen_map.csv \
-	--sv-table dada2_sv_table.csv \
-	--sv-table-long dada2_sv_table_long.csv \
+	--sv-table sv_table.csv \
+	--sv-table-long sv_table_long.csv \
 	--weights weights.csv
     """
 }
