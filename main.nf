@@ -88,12 +88,14 @@ process plot_quality {
 	tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_plot_quality
 
     output:
-	file("${sampleid}_quality.svg")
+	file("${sampleid}.png")
 
     publishDir "${params.output}/qplots/", overwrite: true
 
+    // TODO: move trimming params to config
+
     """
-    dada2_plot_quality.R ${R1} ${R2} -o ${sampleid}.svg \
+    dada2_plot_quality.R ${R1} ${R2} -o ${sampleid}.png \
         --f-trunc 280 --r-trunc 250 --trim-left 15
     """
 }
