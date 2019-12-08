@@ -17,9 +17,10 @@ main <- function(arguments){
   parser <- ArgumentParser()
   parser$add_argument('--r1', help='file listing R1 fq files for this batch')
   parser$add_argument('--r2', help='file listing R2 fq files for this batch')
-  parser$add_argument('--model', help='output .rds file containing the model',
-                      default='error_model.rds')
-  parser$add_argument('--plots', help='optional file for output of dada2::plotErrors()')
+  parser$add_argument('--model', default='error_model.rds',
+                      help='output .rds file containing the model')
+  parser$add_argument('--plots',
+                      help='optional file for output of dada2::plotErrors()')
   parser$add_argument('--nthreads', type='integer', default=0,
                       help='number of processes; defaults to number available')
 
