@@ -39,7 +39,7 @@ main <- function(arguments){
                       help='specimen identifier for title')
 
   parser$add_argument('--nreads', type='double', default=100000)
-  parser$add_argument('--trim-left', type='double', default=1)
+  parser$add_argument('--trim-left', type='double')
   parser$add_argument('--f-trunc', type='double')
   parser$add_argument('--r-trunc', type='double')
 
@@ -58,20 +58,24 @@ main <- function(arguments){
     quit()
   }
 
-  p.r1 <- dada2::plotQualityProfile(args$r1, args$nreads)
-  p.r2 <- dada2::plotQualityProfile(args$r2, args$nreads)
+  p.r1 <- dada2::plotQualityProfile(args$r1, args$nreads) +
+    ggtitle(gettextf(
+        '%s R1: trim_left: %s  f_trunc: %s', args$specimen, trim_left, f_trunc))
+
+  p.r2 <- dada2::plotQualityProfile(args$r2, args$nreads) +
+    ggtitle(gettextf(
+        '%s R2: trim_left: %s  r_trunc: %s', args$specimen, trim_left, r_trunc))
 
   ## mark positions at which reads will be trimmed
-  p.r1 <- p.r1 +
-    ggtitle(gettextf('%s R1: trim_left: %s  f_trunc: %s',
-                     args$specimen, trim_left, f_trunc)) +
-    geom_vline(xintercept=c(trim_left, f_trunc))
+  r1lines <- c(trim_left, f_trunc)
+  if(any(!is.na(r1lines))){
+    p.r1 <- p.r1 + geom_vline(xintercept=r1lines)
+  }
 
-  if(!is.null(args$trim_left)){
-    p.r2 <- p.r2 +
-      ggtitle(gettextf('%s R2: trim_left: %s  r_trunc: %s',
-                       args$specimen, trim_left, r_trunc)) +
-      geom_vline(xintercept=c(trim_left, r_trunc))}
+  r2lines <- c(trim_left, r_trunc)
+  if(any(!is.na(r2lines))){
+    p.r2 <- p.r2 + geom_vline(xintercept=r2lines)
+  }
 
   fig <- gridExtra::grid.arrange(p.r1, p.r2, nrow=1)
 
