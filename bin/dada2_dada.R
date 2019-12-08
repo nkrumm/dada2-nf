@@ -19,17 +19,16 @@ main <- function(arguments){
   parser <- ArgumentParser()
   parser$add_argument('r1', help='path to fastq for R1')
   parser$add_argument('r2', help='path to fastq for R2')
-  parser$add_argument('-s', '--sampleid', default='unknown', help='label for this specimen')
   parser$add_argument('--errors',
                       help=paste('.rds file containing error model',
                                  '(a list with values "errF" and "errR").',
                                  'Calculates error model for this specimen if not provided.'))
 
   ## outputs
-  parser$add_argument('--dada2-data', default='dada2_data.rds',
+  parser$add_argument('--data', default='dada.rds',
                       help="output .rds file containing intermediate data structures")
-  parser$add_argument('--seqtab-nochim', default='seqtab_nochim.rds',
-                      help="output .rds containing chimera-checked seqtab")
+  parser$add_argument('--seqtab', default='seqtab.csv',
+                      help="output file containing chimera-checked SVs")
   parser$add_argument('--counts', default='counts.csv',
                       help="input and output read counts")
   parser$add_argument('--overlaps', default='overlaps.csv',
@@ -37,6 +36,7 @@ main <- function(arguments){
 
 
   ## parameters
+  parser$add_argument('-s', '--sampleid', default='unknown', help='label for this specimen')
   parser$add_argument('--self-consist', default='TRUE', choices=c('TRUE', 'FALSE'),
                       help='value for dad2::dada(selfConsist) [%(default)s]')
   parser$add_argument('--max-mismatch', type='integer', default=0,
@@ -53,7 +53,6 @@ main <- function(arguments){
 
 
   args <- parser$parse_args(arguments)
-
   multithread <- if(args$nthreads == 0){ TRUE }else{ args$nthreads }
 
   fnFs <- args$r1
@@ -93,36 +92,67 @@ main <- function(arguments){
                        maxMismatch=args$max_mismatch,
                        verbose=TRUE)
 
-  cat('making sequence table\n')
-  seqtab <- dada2::makeSequenceTable(merged)
-  rownames(seqtab) <- args$sampleid
-
-  cat('checking for chimeras\n')
-  seqtab.nochim <- dada2::removeBimeraDenovo(seqtab, multithread=multithread, verbose=TRUE)
-  rownames(seqtab.nochim) <- args$sampleid
-
-  saveRDS(seqtab.nochim, file=args$seqtab_nochim)
-  saveRDS(list(sampleid=args$sampleid, f=f, r=r, merged=merged,
-               seqtab=seqtab, seqtab.nochim=seqtab.nochim),
-          file=args$dada2_data)
-
-  ## read counts for various stages of the analysis
   getN <- function(x){ sum(dada2::getUniques(x)) }
-  counts <- data.frame(
-      sampleid=args$sampleid,
-      filtered_and_trimmed=getN(f$derep[[1]]),
-      denoised_r1=getN(f$dada),
-      denoised_r2=getN(r$dada),
-      merged=getN(merged),
-      no_chimeras=rowSums(seqtab.nochim)
-  )
-  write.csv(counts, file=args$counts, row.names=FALSE)
+  if(nrow(merged) > 0){
+    cat('making sequence table\n')
+    seqtab <- dada2::makeSequenceTable(merged)
+    rownames(seqtab) <- args$sampleid
 
-  ## calculate overlaps among merged reads
-  overlaps <- data.frame(aggregate(abundance ~ nmatch, merged, sum))
-  overlaps$sampleid <- args$sampleid
-  write.csv(overlaps[, c('sampleid', 'nmatch', 'abundance')],
-            file=args$overlaps, row.names=FALSE)
+    cat('checking for chimeras\n')
+    seqtab.nochim <- dada2::removeBimeraDenovo(seqtab, multithread=multithread, verbose=TRUE)
+    rownames(seqtab.nochim) <- args$sampleid
+
+    write.table(
+        data.frame(sampleid=args$sampleid,
+                   count=as.integer(seqtab.nochim),
+                   seq=colnames(seqtab.nochim)),
+        file=args$seqtab,
+        sep=",", quote=FALSE, col.names=FALSE, row.names=FALSE)
+
+    ## saveRDS(seqtab.nochim, file=args$seqtab)
+    saveRDS(list(sampleid=args$sampleid, f=f, r=r, merged=merged,
+                 seqtab=seqtab, seqtab.nochim=seqtab.nochim),
+            file=args$data)
+
+    ## read counts for various stages of the analysis
+    counts <- data.frame(
+        sampleid=args$sampleid,
+        filtered_and_trimmed=getN(f$derep[[1]]),
+        denoised_r1=getN(f$dada),
+        denoised_r2=getN(r$dada),
+        merged=getN(merged),
+        no_chimeras=rowSums(seqtab.nochim)
+    )
+    write.csv(counts, file=args$counts, row.names=FALSE)
+
+    ## calculate overlaps among merged reads
+    overlaps <- data.frame(aggregate(abundance ~ nmatch, merged, sum))
+    overlaps$sampleid <- args$sampleid
+    write.csv(overlaps[, c('sampleid', 'nmatch', 'abundance')],
+              file=args$overlaps, row.names=FALSE)
+  }else{
+    cat(gettextf('Warning: no merged reads in sample %s\n', args$sampleid))
+
+    ## saveRDS(NULL, file=args$seqtab)
+    file.create(args$seqtab)  ## an empty file
+
+    saveRDS(list(sampleid=args$sampleid, f=f, r=r, merged=NULL,
+                 seqtab=NULL, seqtab.nochim=NULL),
+            file=args$data)
+
+    ## read counts for various stages of the analysis
+    counts <- data.frame(
+        sampleid=args$sampleid,
+        filtered_and_trimmed=getN(f$derep[[1]]),
+        denoised_r1=getN(f$dada),
+        denoised_r2=getN(r$dada),
+        merged=0,
+        no_chimeras=0
+    )
+    write.csv(counts, file=args$counts, row.names=FALSE)
+    write.csv(data.frame(sampleid=args$sampleid, nmatch=NA, abundance=NA),
+              file=args$overlaps, row.names=FALSE)
+  }
 
 }
 
