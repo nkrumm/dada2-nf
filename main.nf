@@ -193,13 +193,13 @@ process combined_overlaps {
     """
 }
 
-process combined_counts {
+process dada_counts_concat {
 
     input:
 	file("*.csv") from dada_counts.collect()
 
     output:
-	file("dada_counts.csv")
+	file("dada_counts.csv") into dada_counts_concat
 
     publishDir params.output, overwrite: true
 
@@ -266,7 +266,7 @@ process filter_16s {
 	file("16s.fasta")
     file("not16s.fasta")
     file("16s_outcomes.csv")
-    file("16s_counts.csv")
+    file("16s_counts.csv") into is_16s_counts
 
     publishDir params.output, overwrite: true
 
@@ -277,5 +277,23 @@ process filter_16s {
 	--failing not16s.fasta \
         --outcomes 16s_outcomes.csv \
         --counts 16s_counts.csv
+    """
+}
+
+
+process join_counts {
+
+    input:
+	file("bcop.csv") from bcop_counts_concat
+    file("dada.csv") from dada_counts_concat
+    file("16s.csv") from is_16s_counts
+
+    output:
+	file("counts.csv")
+
+    publishDir params.output, overwrite: true
+
+    """
+    ljoin.R bcop.csv dada.csv 16s.csv -o counts.csv
     """
 }
