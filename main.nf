@@ -4,13 +4,14 @@ sample_information = "test/sample-information.csv"
 fastq_list = "test/fastq-list.txt"
 
 sample_info = Channel.fromPath(sample_information)
-fastq_files = Channel.fromPath(fastq_list)
+Channel.fromPath(fastq_list)
     .splitText()
     .map { file(it.trim()) }
     .map { [(it.fileName =~ /(^[-a-zA-Z0-9]+)/)[0][0], it ] }
     .groupTuple()
     .map { [ it[0], it[1].sort() ] }
     .map { it.flatten() }
+    .into{ to_barcodecop ; to_plot_quality }
 
 
 process read_manifest {
@@ -33,7 +34,7 @@ process read_manifest {
 process barcodecop {
 
     input:
-	tuple sampleid, file(I1), file(I2), file(R1), file(R2) from fastq_files
+	tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_barcodecop
 
     output:
 	tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
@@ -79,21 +80,23 @@ to_filter = bcop_counts_concat
     .cross(bcop_filtered)
     .map{ it[1] }
 
-// process plot_quality {
+// to_plot_quality.println { "Received: $it" }
 
-//     input:
-//     tuple batch, sampleid, fwd, rev from sample_list.splitCsv(header: true)
-//     file("") from to_plot.collect()
+process plot_quality {
 
-//     output:
-//     file("qplot_${sampleid}.svg")
+    input:
+	tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_plot_quality
 
-//     publishDir "${params.output}/batch_${batch}/qplots/", overwrite: true
+    output:
+	file("${sampleid}_quality.svg")
 
-//     """
-//     dada2_plot_quality.R ${fwd} ${rev} --f-trunc 280 -o qplot_${sampleid}.svg --r-trunc 250 --title \"${sampleid} (batch ${batch})\" --trim-left 15
-//     """
-// }
+    publishDir "${params.output}/qplots/", overwrite: true
+
+    """
+    dada2_plot_quality.R ${R1} ${R2} -o ${sampleid}.svg \
+        --f-trunc 280 --r-trunc 250 --trim-left 15
+    """
+}
 
 
 process filter_and_trim {

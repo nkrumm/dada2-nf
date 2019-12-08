@@ -18,7 +18,7 @@ main <- function(arguments){
   parser$add_argument('r1', help='fastq.gz containing forward read')
   parser$add_argument('r2', help='fastq.gz containing reverse read')
   parser$add_argument('-o', '--outfile', default='plot_quality.svg')
-  parser$add_argument('--title', default='quality plot')
+  ## parser$add_argument('--title', default='quality plot')
 
   parser$add_argument('--nreads', type='double', default=10000)
   parser$add_argument('--trim-left', type='double')
