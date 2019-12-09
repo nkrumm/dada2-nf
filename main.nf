@@ -3,6 +3,8 @@
 sample_information = "test/sample-information.csv"
 fastq_list = "test/fastq-list.txt"
 
+// iterate over list of input files, split sampleid from filenames,
+// and arrange into a sequence of (sampleid, I1, I2, R1, R2)
 sample_info = Channel.fromPath(sample_information)
 Channel.fromPath(fastq_list)
     .splitText()
@@ -73,6 +75,8 @@ process bcop_counts_concat {
 
 // bcop_filtered.println { "Received: $it" }
 
+// Join read counts with names of files filtered by barcodecop,
+// discard empty files, and return sequence of (sampleid, R1, R2).
 // TODO: define a variable min_reads for filtering
 to_filter = bcop_counts_concat
     .splitCsv(header: true)
