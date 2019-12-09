@@ -134,7 +134,7 @@ batches
 process learn_errors {
 
     input:
-	tuple batch, R1s, R2s from to_learn_errors.map{ it[1, 2, 3] }.groupTuple()
+	tuple batch, file("R1_*.fastq.gz"), file("R2_*.fastq.gz") from to_learn_errors.map{ it[1, 2, 3] }.groupTuple()
 
     output:
 	file("error_model_${batch}.rds") into error_models
@@ -142,12 +142,9 @@ process learn_errors {
 
     publishDir "${params.output}", overwrite: true
 
-    // https://github.com/nextflow-io/nextflow/issues/774
-    // TODO: use file() to stage inputs somehow?
-
     """
-    echo "${R1s.join('\n')}" > R1.txt
-    echo "${R2s.join('\n')}" > R2.txt
+    ls -1 R1_*.fastq.gz > R1.txt
+    ls -1 R2_*.fastq.gz > R2.txt
     dada2_learn_errors.R --r1 R1.txt --r2 R2.txt \
         --model error_model_${batch}.rds \
         --plots error_model_${batch}.png \
