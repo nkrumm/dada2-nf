@@ -1,5 +1,9 @@
-// TODO: command line parameters for these inputs with these defaults
-// in the config file
+if(!(params.sample_information && params.fastq_list)){
+    println "'sample_information' or 'fastq_list' is undefined"
+    println "provide parameters using '--params-file params.json'"
+    System.exit(1)
+}
+
 sample_information = params.sample_information
 fastq_list = params.fastq_list
 

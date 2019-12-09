@@ -1,0 +1,5 @@
+{
+  "sample_information": "test/sample-information.csv",
+  "fastq_list": "test/fastq-list.txt",
+  "output": "output"
+}
