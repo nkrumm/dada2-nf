@@ -19,11 +19,11 @@ Channel.fromPath(fastq_list)
 process read_manifest {
 
     input:
-	file("sample-information.csv") from sample_info
+        file("sample-information.csv") from sample_info
     file("fastq-files.txt") from Channel.fromPath(fastq_list)
 
     output:
-	file("batches.csv") into batches
+        file("batches.csv") into batches
 
     publishDir params.output, overwrite: true
 
@@ -36,10 +36,10 @@ process read_manifest {
 process barcodecop {
 
     input:
-	tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_barcodecop
+        tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_barcodecop
 
     output:
-	tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
+        tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
     tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
 
     publishDir "${params.output}/barcodecop/", overwrite: true
@@ -58,10 +58,10 @@ process barcodecop {
 process bcop_counts_concat {
 
     input:
-	file("counts*.csv") from bcop_counts.collect()
+        file("counts*.csv") from bcop_counts.collect()
 
     output:
-	file("bcop_counts.csv") into bcop_counts_concat
+        file("bcop_counts.csv") into bcop_counts_concat
 
     publishDir "${params.output}", overwrite: true
 
@@ -89,10 +89,10 @@ to_filter = bcop_counts_concat
 process plot_quality {
 
     input:
-	tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_plot_quality
+        tuple sampleid, file(I1), file(I2), file(R1), file(R2) from to_plot_quality
 
     output:
-	file("${sampleid}.png")
+        file("${sampleid}.png")
 
     publishDir "${params.output}/qplots/", overwrite: true
 
@@ -111,10 +111,10 @@ process plot_quality {
 process filter_and_trim {
 
     input:
-	tuple sampleid, file(R1), file(R2) from to_filter
+        tuple sampleid, file(R1), file(R2) from to_filter
 
     output:
-	tuple sampleid, file("${sampleid}_R1_filt.fq.gz"), file("${sampleid}_R2_filt.fq.gz") into filtered_trimmed
+        tuple sampleid, file("${sampleid}_R1_filt.fq.gz"), file("${sampleid}_R2_filt.fq.gz") into filtered_trimmed
 
     publishDir "${params.output}/filtered/", overwrite: true
 
@@ -126,7 +126,7 @@ process filter_and_trim {
         --trim-left ${params.trim_left} \
         --f-trunc ${params.f_trunc} \
         --r-trunc ${params.r_trunc} \
-	--truncq 2
+        --truncq 2
     """
 }
 
@@ -141,10 +141,10 @@ batches
 process learn_errors {
 
     input:
-	tuple batch, file("R1_*.fastq.gz"), file("R2_*.fastq.gz") from to_learn_errors.map{ it[1, 2, 3] }.groupTuple()
+        tuple batch, file("R1_*.fastq.gz"), file("R2_*.fastq.gz") from to_learn_errors.map{ it[1, 2, 3] }.groupTuple()
 
     output:
-	file("error_model_${batch}.rds") into error_models
+        file("error_model_${batch}.rds") into error_models
     file("error_model_${batch}.png") into error_model_plots
 
     publishDir "${params.output}", overwrite: true
@@ -163,11 +163,11 @@ process learn_errors {
 process dada_dereplicate {
 
     input:
-	tuple sampleid, batch, file(R1), file(R2) from to_dereplicate
+        tuple sampleid, batch, file(R1), file(R2) from to_dereplicate
     file("") from error_models.collect()
 
     output:
-	file("dada.rds") into dada_data
+        file("dada.rds") into dada_data
     file("seqtab.csv") into dada_seqtab
     file("counts.csv") into dada_counts
     file("overlaps.csv") into dada_overlaps
@@ -178,22 +178,22 @@ process dada_dereplicate {
 
     """
     dada2_dada.R ${R1} ${R2} --errors error_model_${batch}.rds \
-	--sampleid ${sampleid} \
-	--self-consist FALSE \
-	--data dada.rds \
-	--seqtab seqtab.csv \
-	--counts counts.csv \
-	--overlaps overlaps.csv
+        --sampleid ${sampleid} \
+        --self-consist FALSE \
+        --data dada.rds \
+        --seqtab seqtab.csv \
+        --counts counts.csv \
+        --overlaps overlaps.csv
     """
 }
 
 process combined_overlaps {
 
     input:
-	file("overlaps_*.csv") from dada_overlaps.collect()
+        file("overlaps_*.csv") from dada_overlaps.collect()
 
     output:
-	file("overlaps.csv")
+        file("overlaps.csv")
 
     publishDir params.output, overwrite: true
 
@@ -205,10 +205,10 @@ process combined_overlaps {
 process dada_counts_concat {
 
     input:
-	file("*.csv") from dada_counts.collect()
+        file("*.csv") from dada_counts.collect()
 
     output:
-	file("dada_counts.csv") into dada_counts_concat
+        file("dada_counts.csv") into dada_counts_concat
 
     publishDir params.output, overwrite: true
 
@@ -220,10 +220,10 @@ process dada_counts_concat {
 process write_seqs {
 
     input:
-	file("seqtab_*.csv") from dada_seqtab.collect()
+        file("seqtab_*.csv") from dada_seqtab.collect()
 
     output:
-	file("seqs.fasta") into seqs
+        file("seqs.fasta") into seqs
     file("specimen_map.csv")
     file("sv_table.csv")
     file("sv_table_long.csv")
@@ -233,11 +233,11 @@ process write_seqs {
 
     """
     write_seqs.py seqtab_*.csv \
-	--seqs seqs.fasta \
-	--specimen-map specimen_map.csv \
-	--sv-table sv_table.csv \
-	--sv-table-long sv_table_long.csv \
-	--weights weights.csv
+        --seqs seqs.fasta \
+        --specimen-map specimen_map.csv \
+        --sv-table sv_table.csv \
+        --sv-table-long sv_table_long.csv \
+        --weights weights.csv
     """
 }
 
@@ -247,11 +247,11 @@ seqs.into { seqs_to_align; seqs_to_filter }
 process cmalign {
 
     input:
-	file("seqs.fasta") from seqs_to_align
+        file("seqs.fasta") from seqs_to_align
     file('ssu.cm') from file("data/ssu-align-0.1.1-bacteria-0p1.cm")
 
     output:
-	file("seqs.sto")
+        file("seqs.sto")
     file("sv_aln_scores.txt") into aln_scores
 
     publishDir params.output, overwrite: true
@@ -267,12 +267,12 @@ process cmalign {
 process filter_16s {
 
     input:
-	file("seqs.fasta") from seqs_to_filter
+        file("seqs.fasta") from seqs_to_filter
     file("sv_aln_scores.txt") from aln_scores
     file("weights.csv") from weights
 
     output:
-	file("16s.fasta")
+        file("16s.fasta")
     file("not16s.fasta")
     file("16s_outcomes.csv")
     file("16s_counts.csv") into is_16s_counts
@@ -281,9 +281,9 @@ process filter_16s {
 
     """
     filter_16s.py seqs.fasta sv_aln_scores.txt --weights weights.csv \
-	--min-bit-score 0 \
-	--passing 16s.fasta \
-	--failing not16s.fasta \
+        --min-bit-score 0 \
+        --passing 16s.fasta \
+        --failing not16s.fasta \
         --outcomes 16s_outcomes.csv \
         --counts 16s_counts.csv
     """
@@ -293,12 +293,12 @@ process filter_16s {
 process join_counts {
 
     input:
-	file("bcop.csv") from bcop_counts_concat
+        file("bcop.csv") from bcop_counts_concat
     file("dada.csv") from dada_counts_concat
     file("16s.csv") from is_16s_counts
 
     output:
-	file("counts.csv")
+        file("counts.csv")
 
     publishDir params.output, overwrite: true
 
