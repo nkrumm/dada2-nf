@@ -21,11 +21,14 @@ main <- function(arguments){
   parser$add_argument('--truncq', type='integer', metavar='N', default=2,
                       help=paste('truncate reads at the first instance ',
                                  'of a quality score <= N'))
+  parser$add_argument('--nthreads', type='integer', default=0,
+                      help='number of processes; defaults to number available')
 
   args <- parser$parse_args(arguments)
   trim_left <- rep(args$trim_left, 2)
   maxEE <- if(is.null(args$max_ee)){ Inf }else{ args$max_ee }
   truncQ <- args$truncq
+  multithread <- if(args$nthreads == 0){ TRUE }else{ args$nthreads }
 
   dada2::fastqPairedFilter(fn=args$infiles,
                            fout=args$outfiles,
@@ -35,6 +38,7 @@ main <- function(arguments){
                            maxEE=maxEE,
                            truncQ=truncQ,
                            compress=TRUE,
+                           multithread=multithread,
                            verbose=TRUE)
 }
 

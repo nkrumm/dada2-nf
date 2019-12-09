@@ -82,10 +82,9 @@ process bcop_counts_concat {
 
 // Join read counts with names of files filtered by barcodecop,
 // discard empty files, and return sequence of (sampleid, R1, R2).
-// TODO: define a variable min_reads for filtering
 to_filter = bcop_counts_concat
     .splitCsv(header: true)
-    .filter{ it['barcodecop'].toInteger() > 0 }
+    .filter{ it['barcodecop'].toInteger() >= params.min_reads }
     .cross(bcop_filtered)
     .map{ it[1] }
 
@@ -101,8 +100,6 @@ process plot_quality {
 
     publishDir "${params.output}/qplots/", overwrite: true
 
-    // TODO: move trimming params to config
-
     """
     dada2_plot_quality.R ${R1} ${R2} -o ${sampleid}.png \
         --trim-left ${params.trim_left} \
@@ -114,6 +111,8 @@ process plot_quality {
 
 
 process filter_and_trim {
+
+    cpus 4
 
     input:
         tuple sampleid, file(R1), file(R2) from to_filter
@@ -144,6 +143,8 @@ batches
 
 process learn_errors {
 
+    cpus 8
+
     input:
         tuple batch, file("R1_*.fastq.gz"), file("R2_*.fastq.gz") from to_learn_errors.map{ it[1, 2, 3] }.groupTuple()
 
@@ -158,13 +159,14 @@ process learn_errors {
     ls -1 R2_*.fastq.gz > R2.txt
     dada2_learn_errors.R --r1 R1.txt --r2 R2.txt \
         --model error_model_${batch}.rds \
-        --plots error_model_${batch}.png \
-        --nthreads 10
+        --plots error_model_${batch}.png
     """
 }
 
 
 process dada_dereplicate {
+
+    cpus 8
 
     input:
         tuple sampleid, batch, file(R1), file(R2) from to_dereplicate
@@ -178,12 +180,10 @@ process dada_dereplicate {
 
     publishDir "${params.output}/dada/${sampleid}/", overwrite: true
 
-    // TODO: set --self-consist to TRUE in production
-
     """
     dada2_dada.R ${R1} ${R2} --errors error_model_${batch}.rds \
         --sampleid ${sampleid} \
-        --self-consist FALSE \
+        --self-consist ${params.self_consist} \
         --data dada.rds \
         --seqtab seqtab.csv \
         --counts counts.csv \
@@ -250,6 +250,8 @@ seqs.into { seqs_to_align; seqs_to_filter }
 
 process cmalign {
 
+    cpus 8
+
     input:
         file("seqs.fasta") from seqs_to_align
     file('ssu.cm') from file("data/ssu-align-0.1.1-bacteria-0p1.cm")
@@ -260,10 +262,8 @@ process cmalign {
 
     publishDir params.output, overwrite: true
 
-    // TODO: how to best specify cpu usage by cmalign?
-
     """
-    cmalign --cpu 10 --dnaout --noprob \
+    cmalign --dnaout --noprob \
         -o seqs.sto --sfile sv_aln_scores.txt ssu.cm seqs.fasta
     """
 }

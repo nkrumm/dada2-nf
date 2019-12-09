@@ -47,7 +47,6 @@ main <- function(arguments){
                                  'a sequence may contain compared to a more',
                                  'abundant variant to be considered for grouping.',
                                  '[%(default)s]'))
-
   parser$add_argument('--nthreads', type='integer', default=0,
                       help='number of processes; defaults to number available')
 
