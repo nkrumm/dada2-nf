@@ -15,6 +15,7 @@ Channel.fromPath(fastq_list)
     .map { it.flatten() }
     .into{ to_barcodecop ; to_plot_quality }
 
+// to_barcodecop.println { "Received: $it" }
 
 process read_manifest {
 
@@ -25,7 +26,7 @@ process read_manifest {
     output:
         file("batches.csv") into batches
 
-    publishDir params.output, overwrite: true
+    // publishDir params.output, overwrite: true
 
     """
     manifest.py --outfile batches.csv sample-information.csv fastq-files.txt
@@ -42,7 +43,7 @@ process barcodecop {
         tuple sampleid, file("${sampleid}_R1_.fq.gz"), file("${sampleid}_R2_.fq.gz") into bcop_filtered
     tuple file("${sampleid}_R1_counts.csv"), file("${sampleid}_R2_counts.csv") into bcop_counts
 
-    publishDir "${params.output}/barcodecop/", overwrite: true
+    // publishDir "${params.output}/barcodecop/", overwrite: true
 
     """
     barcodecop --fastq ${R1} ${I1} ${I2} \
@@ -63,7 +64,7 @@ process bcop_counts_concat {
     output:
         file("bcop_counts.csv") into bcop_counts_concat
 
-    publishDir "${params.output}", overwrite: true
+    // publishDir "${params.output}", overwrite: true
 
     // TODO: barcodecop should have --sampleid argument to pass through to counts
 
@@ -116,9 +117,8 @@ process filter_and_trim {
     output:
         tuple sampleid, file("${sampleid}_R1_filt.fq.gz"), file("${sampleid}_R2_filt.fq.gz") into filtered_trimmed
 
-    publishDir "${params.output}/filtered/", overwrite: true
+    // publishDir "${params.output}/filtered/", overwrite: true
 
-    // TODO: variables in config for filter and trim params
     """
     dada2_filter_and_trim.R \
         --infiles ${R1} ${R2} \
@@ -147,7 +147,7 @@ process learn_errors {
         file("error_model_${batch}.rds") into error_models
     file("error_model_${batch}.png") into error_model_plots
 
-    publishDir "${params.output}", overwrite: true
+    publishDir "${params.output}/error_models", overwrite: true
 
     """
     ls -1 R1_*.fastq.gz > R1.txt
@@ -172,7 +172,7 @@ process dada_dereplicate {
     file("counts.csv") into dada_counts
     file("overlaps.csv") into dada_overlaps
 
-    publishDir "${params.output}/${sampleid}/", overwrite: true
+    publishDir "${params.output}/dada/${sampleid}/", overwrite: true
 
     // TODO: set --self-consist to TRUE in production
 
@@ -210,7 +210,7 @@ process dada_counts_concat {
     output:
         file("dada_counts.csv") into dada_counts_concat
 
-    publishDir params.output, overwrite: true
+    // publishDir params.output, overwrite: true
 
     """
     csvcat.sh *.csv > dada_counts.csv
