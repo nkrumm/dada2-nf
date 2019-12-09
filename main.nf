@@ -1,7 +1,7 @@
 // TODO: command line parameters for these inputs with these defaults
 // in the config file
-sample_information = "test/sample-information.csv"
-fastq_list = "test/fastq-list.txt"
+sample_information = params.sample_information
+fastq_list = params.fastq_list
 
 // iterate over list of input files, split sampleid from filenames,
 // and arrange into a sequence of (sampleid, I1, I2, R1, R2)
@@ -100,7 +100,10 @@ process plot_quality {
 
     """
     dada2_plot_quality.R ${R1} ${R2} -o ${sampleid}.png \
-        --f-trunc 280 --r-trunc 250 --trim-left 15
+        --trim-left ${params.trim_left} \
+        --f-trunc ${params.f_trunc} \
+        --r-trunc ${params.r_trunc}
+
     """
 }
 
@@ -120,9 +123,9 @@ process filter_and_trim {
     dada2_filter_and_trim.R \
         --infiles ${R1} ${R2} \
         --outfiles ${sampleid}_R1_filt.fq.gz ${sampleid}_R2_filt.fq.gz \
-	--trim-left 15 \
-	--f-trunc 280 \
-	--r-trunc 250 \
+        --trim-left ${params.trim_left} \
+        --f-trunc ${params.f_trunc} \
+        --r-trunc ${params.r_trunc} \
 	--truncq 2
     """
 }
@@ -303,3 +306,5 @@ process join_counts {
     ljoin.R bcop.csv dada.csv 16s.csv -o counts.csv
     """
 }
+
+
