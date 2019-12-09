@@ -10,48 +10,12 @@ Install the nextflow binary in this directory
 wget -qO- https://get.nextflow.io | bash
 ```
 
-Using the minimal config settings below run the pipeline
+Execute locally, using the minimal data set.
 
 ```
-./nextflow run main.nf
+./nextflow run main.nf -params-file params-minimal.json
 ```
-
-The default profile results in local execution.
 
 ## Execution on AWS Batch
 
-A configuration file for AWS Batch execution will look something like this:
-
-```
-profiles{
-    resume = true
-    cloud {
-        aws {
-            batch {
-                cliPath = '/home/ec2-user/miniconda/bin/aws'
-                jobRole = 'arn:aws:iam::::'
-                volumes = ['/docker_scratch:/tmp:rw']
-            }
-            region = 'us-west-2'
-        }
-        process {
-            executor = 'awsbatch'
-            queue = 'mixed'
-        }
-    }
-    standard {
-        docker {
-            enabled = true
-        }
-        params {
-            output = 'output'
-        }
-        process {
-            executor = 'local'
-        }
-    }
-}
-```
-
-TODO: some high-level guidance on how to learn how to set up Batch.
-
+Details will depend on your AWS batch configuration. General instructions TBD.
