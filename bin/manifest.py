@@ -93,6 +93,10 @@ def main(arguments):
     manifest = list(read_manifest(args.manifest))
     manifest_sampleids = {row['sampleid'] for row in manifest}
 
+    # add missing batch labels
+    for row in manifest:
+        row['batch'] = row['batch'] or 'unk'
+
     fq_files = sorted(line.strip() for line in args.fastq_files if line.strip())
 
     fq_sampleids = {get_sampleid(pth) for pth in fq_files}
