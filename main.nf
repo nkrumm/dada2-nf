@@ -52,10 +52,10 @@ process barcodecop {
     """
     barcodecop --fastq ${R1} ${I1} ${I2} \
         --outfile ${sampleid}_R1_.fq.gz --read-counts ${sampleid}_R1_counts.csv \
-        --quiet --match-filter
+        --match-filter --qual-filter
     barcodecop --fastq ${R2} ${I1} ${I2} \
         --outfile ${sampleid}_R2_.fq.gz --read-counts ${sampleid}_R2_counts.csv \
-        --quiet --match-filter
+        --match-filter --qual-filter
     """
 }
 
