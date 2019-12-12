@@ -4,15 +4,17 @@ if(!(params.sample_information && params.fastq_list)){
     System.exit(1)
 }
 
+println "Project : $workflow.projectDir"
+
 sample_information = params.sample_information
 fastq_list = params.fastq_list
 
 // iterate over list of input files, split sampleid from filenames,
 // and arrange into a sequence of (sampleid, I1, I2, R1, R2)
-sample_info = Channel.fromPath(sample_information)
-Channel.fromPath(fastq_list)
+sample_info = Channel.fromPath("$workflow.projectDir/$sample_information")
+Channel.fromPath("$workflow.projectDir/$fastq_list")
     .splitText()
-    .map { file(it.trim()) }
+    .map { file("$workflow.projectDir/" + it.trim()) }
     .map { [(it.fileName =~ /(^[-a-zA-Z0-9]+)/)[0][0], it ] }
     .groupTuple()
     .map { [ it[0], it[1].sort() ] }
@@ -25,7 +27,7 @@ process read_manifest {
 
     input:
         file("sample-information.csv") from sample_info
-        file("fastq-files.txt") from Channel.fromPath(fastq_list)
+        file("fastq-files.txt") from Channel.fromPath("$workflow.projectDir/$fastq_list")
 
     output:
         file("batches.csv") into batches
