@@ -1,8 +1,9 @@
-{
+ {
   "type": "object",
-  "required": ["title"],
+  "required": ["sample_information", "fastq_list", "output"],
   "properties": {
-    "title": {"type": "string", "title": "Title", "default": "A new task"},
-    "done": {"type": "boolean", "title": "Done?", "default": false}
+	  "sample_information": {"type": "string", "title": "Manifest (.csv)", "default": "test/sample-information.csv"},
+	  "fastq_list": {"type": "string", "title": "FASTQ list (.txt)", "default": "test/fastq-list.txt"},
+	  "output": {"type": "string", "title": "Output Location (s3://)"}
   }
 }
